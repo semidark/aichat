@@ -105,3 +105,17 @@ The first release focuses on a lean, fast, and responsive chat experience for re
 * Continuous Integration (CI) pipelines will be set up to run tests on every commit, as well as to build and deploy changes on test devices or simulators that mimic the Kindle's web browser environment.  
 * Performance benchmarks specific to low-power, e-ink devices will be integrated into the CI process to ensure that response times, memory footprint, and CPU usage meet the success metrics.
 * Automated testing scripts will help verify that merging upstream changes does not break the customized modifications, bolstering confidence in long-term maintainability.
+
+---
+
+## 9. Dependencies and Versioning
+
+This project will use the upstream aichat’s `Cargo.toml` as the single source of truth for all dependency versions and library choices. No dependency version numbers will be redundantly documented here.
+
+Guidelines:
+1. Reuse the versions and libraries as specified in the upstream `Cargo.toml` for all core functionalities.
+2. Do not introduce new libraries for features already covered by existing dependencies.
+3. Any deviation or addition must be justified, documented, and reviewed for compatibility and long-term maintainability.
+4. Regularly synchronize with upstream to ensure continued compatibility.
+
+By anchoring all dependency management and versioning to the upstream `Cargo.toml`, we ensure maximal compatibility, avoid duplication, and simplify long-term maintenance.
