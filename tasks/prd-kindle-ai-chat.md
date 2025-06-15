@@ -119,3 +119,30 @@ Guidelines:
 4. Regularly synchronize with upstream to ensure continued compatibility.
 
 By anchoring all dependency management and versioning to the upstream `Cargo.toml`, we ensure maximal compatibility, avoid duplication, and simplify long-term maintenance.
+
+## 10. Coding Standards and Best Practices
+
+This fork will follow coding standards and best practices inspired by aichat, which relies on established Rust community conventions, idiomatic code, and clear inline documentation—rather than project-specific, documented guidelines.
+
+The following best practices should be observed:
+
+1. **Style Guidelines and Formatting**
+   - Adhere to the official [Rust style guidelines](https://doc.rust-lang.org/stable/style-guide/index.html), including naming conventions, indentation, and module structure.
+   - Use community-standard formatting and linting tools such as `rustfmt` and `clippy` to maintain code quality and consistency.
+
+2. **Code Modularity and Separation of Concerns**
+   - Maintain clear separation between core logic inherited from aichat and modifications introduced for Kindle-specific functionality.
+   - Isolate custom adaptations (such as Rocket-based server integration and UI adjustments) in dedicated modules or sub-crates, to simplify upstream merging and minimize conflicts.
+
+3. **Documentation and Inline Comments**
+   - Document all public interfaces and modules, following conventions visible throughout aichat’s codebase.
+   - Use inline comments to explain complex logic or deviations from upstream functionality, aiding maintainers in understanding Kindle-specific adaptations.
+
+4. **Testing and Quality Assurance**
+   - Maintain comprehensive unit and integration tests for new and adapted functionality, using the standard Rust test framework as in aichat.
+   - Ensure any new features or changes are accompanied by tests that verify their impact on both core and Kindle-specific features.
+   - All tests should be run via CI to enforce standards and prevent regressions.
+
+5. **Review and Collaboration**
+   - Code reviews should emphasize adherence to these community conventions and project-specific best practices.
+   - If any explicit project-level or community best practices are adopted in the future (either by aichat or this fork), they should be documented and observed.
