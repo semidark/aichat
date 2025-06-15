@@ -22,7 +22,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
 
 - [X] **0 Fork aichat and create a branch for the kindle-ai-chat project**
 - [ ] **1.0 Project Setup and Initial Rocket Integration**
-  - [ ] 1.1 Add `rocket` (0.5.1) and `uuid` (1.17.0) to `Cargo.toml`.
+  - [x] 1.1 Add `rocket` (0.5.1) and `uuid` (1.17.0) to `Cargo.toml`.
   - [ ] 1.2 Replace the existing `aichat` CLI entry point with a Rocket server launch in `src/main.rs`.
   - [ ] 1.3 Create a `static/` directory to serve static assets (`index.html`, `css`, `js`).
   - [ ] 1.4 Implement a Rocket route to serve files from the `static/` directory.
