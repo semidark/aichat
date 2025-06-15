@@ -37,6 +37,5 @@ fn rocket() -> _ {
 
     rocket::build()
         .manage(app_state)
-        .mount("/", routes![index])
-        .mount("/static", FileServer::from(relative!("static")))
+        .mount("/", FileServer::from(relative!("static")))
 }
