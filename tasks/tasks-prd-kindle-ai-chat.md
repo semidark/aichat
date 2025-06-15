@@ -1,3 +1,7 @@
+# Tasks for the Kindle AI Chat project
+
+Based on PRD: `prd-kindle-ai-chat.md`
+
 ## Relevant Files
 
 - `src/main.rs` - The main entry point for the Rocket web server application.
