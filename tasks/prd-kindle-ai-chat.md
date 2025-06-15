@@ -4,7 +4,6 @@
 ## 1. Introduction / Overview
 The goal is to develop a simple yet powerful AI-chat web interface optimized for low-power devices—specifically, the Kindle e-reader’s web browser.  
 
-
 Kindle AI Chat is a fork-based adaptation of the open-source project **sigoden/aichat**, purpose-built for the low-power web browser found on Kindle e-readers (FW 5.16.4 +).  
 By leveraging aichat’s well-tested crates and architecture, we will deliver a lightweight, snappy chat experience on e-ink while keeping long-term parity with upstream improvements.
 
@@ -19,8 +18,8 @@ The first release focuses on a lean, fast, and responsive chat experience for re
 ### 1-A. Code Reuse & Forking Strategy
 1. **Project Fork** – Development begins with a fork of `github.com/sigoden/aichat` under the working name `aichat-kindle`.  
 2. **Module Reuse**  
-   • Reuse unchanged: `@client`, conversation history structs, logging utilities.  
-   • Adapt: server bootstrap (Rocket instead of axum), HTML templates for Kindle constraints.  
+   • **Clarity on Code Reuse:** The approach explicitly differentiates between unchanged components and those requiring adaptation. Unmodified modules such as the `@client` crate, conversation history structures, and logging utilities will be reused without alteration. In contrast, components that interact directly with the server bootstrap or user interface – especially those that need tailoring for the Kindle’s e-ink display and hyper features – will be carefully adapted.  
+   • Adapt: server bootstrap will be modified to use Rocket while the HTTP client functionality in aichat (which uses Hyper, not axum) will be acknowledged and interfaced accordingly.  
 3. **Upstream Compatibility** –  
    • Keep crate boundaries identical wherever possible.  
    • Submit generic improvements back to the upstream repo.  
@@ -81,7 +80,11 @@ The first release focuses on a lean, fast, and responsive chat experience for re
 
 ## 6. Design & Technical Considerations
 * **High-Contrast UI** – Large serif font (18 px), 1.4 line-height for e-ink clarity.
-* **Framework Choices** – Rocket chosen for its ergonomic async streaming; aligns with Rust ecosystem and is easy to graft onto aichat logic.
+* **Framework Choices** – Rocket is chosen for its ergonomic async streaming; this aligns with the Rust ecosystem and is easy to graft onto aichat logic. Note that while aichat’s HTTP client uses Hyper for its web requests, our fork adapts the server bootstrap to work seamlessly with Rocket.
+* **Separation of Concerns:**  
+   • The system is designed to clearly separate the customization for Kindle constraints from core functionalities inherited from aichat.  
+   • Modifications such as changes to the server bootstrap and HTML templates are kept isolated, ensuring that changes from the upstream codebase can be integrated with minimal conflict.  
+   • Custom adaptations (e.g., tailored streaming logic and debug log exposure) are implemented in separate modules to maintain a clean boundary between reused components and Kindle-specific features.
 * **JavaScript Constraints** – Kindle WebKit ≈ Safari 5: stick to ES5 and DOM-1 APIs.
 * **Styling Footprint** – `<1 KB` critical CSS; no external fonts.
 * **Configuration Management** – `Rocket.toml` with `KINDLE_*` env override.  
@@ -94,3 +97,11 @@ The first release focuses on a lean, fast, and responsive chat experience for re
 * ≥ 95 % of streamed chunks arrive without visible Flash/Flicker artifacts.  
 * Session history persists after browser restart (verified across 20 test runs).
 * Debug console displays latest 100 log lines with < 200 ms lag.
+
+---
+
+## 8. Testing and CI Integration
+* A comprehensive test suite, including unit tests, integration tests, and end-to-end tests, will be established to cover both the inherited functionality and the Kindle-specific adaptations.  
+* Continuous Integration (CI) pipelines will be set up to run tests on every commit, as well as to build and deploy changes on test devices or simulators that mimic the Kindle's web browser environment.  
+* Performance benchmarks specific to low-power, e-ink devices will be integrated into the CI process to ensure that response times, memory footprint, and CPU usage meet the success metrics.
+* Automated testing scripts will help verify that merging upstream changes does not break the customized modifications, bolstering confidence in long-term maintainability.
