@@ -120,6 +120,13 @@ Guidelines:
 
 By anchoring all dependency management and versioning to the upstream `Cargo.toml`, we ensure maximal compatibility, avoid duplication, and simplify long-term maintenance.
 
+For the libraries we will introduce, we will use the following versions:
+- [rocket 0.5.1](https://docs.rs/rocket/latest/rocket/)
+- [uuid 1.17.0](https://docs.rs/uuid/1.17.0/uuid/)
+- [htmx 1.9.12](https://htmx.org/docs/v1.9.12/) 
+  (not 2.x since I want to use the very mature version)
+- [aichat v0.29.0](https://docs.rs/aichat/0.29.0/aichat/) 
+
 ## 10. Coding Standards and Best Practices
 
 This fork will follow coding standards and best practices inspired by aichat, which relies on established Rust community conventions, idiomatic code, and clear inline documentation—rather than project-specific, documented guidelines.
