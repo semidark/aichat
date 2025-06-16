@@ -394,36 +394,68 @@ mod tests {
     }
 
     /// Test saving and loading conversation history to/from file
+    /// This test verifies the complete round-trip persistence functionality
     #[test]
     fn test_conversation_history_save_and_load() {
         let temp_dir = create_temp_data_dir();
-        let original_data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "data".to_string());
+        let original_cwd = std::env::current_dir().unwrap();
         
-        // Set temporary data directory
-        std::env::set_var("DATA_DIR", temp_dir.path().to_str().unwrap());
+        // Change to temp directory so "data" directory gets created there
+        std::env::set_current_dir(temp_dir.path()).unwrap();
         
-        // Create and populate conversation history
-        let session_id = "test-save-load".to_string();
+        // Create and populate conversation history with multiple message types
+        let session_id = "test-save-load-comprehensive".to_string();
         let mut original_history = ConversationHistory::new(session_id.clone());
-        original_history.add_message("user".to_string(), "Hello".to_string());
-        original_history.add_message("assistant".to_string(), "Hi there!".to_string());
+        
+        // Add various types of messages to test comprehensive serialization
+        original_history.add_message("user".to_string(), "Hello, AI assistant!".to_string());
+        original_history.add_message("assistant".to_string(), "Hello! How can I help you today?".to_string());
+        original_history.add_message("user".to_string(), "What's the weather like?".to_string());
+        original_history.add_message("assistant".to_string(), "I don't have access to real-time weather data, but I can help you find weather information.".to_string());
+        
+        // Record original timestamps for verification
+        let original_created_at = original_history.created_at;
+        let original_updated_at = original_history.updated_at;
+        let original_message_count = original_history.messages.len();
         
         // Save to file
         original_history.save_to_file().expect("Failed to save conversation history");
+        
+        // Verify the file was actually created
+        let data_dir = std::path::Path::new("data");
+        let file_path = data_dir.join(format!("{}.json", session_id));
+        assert!(file_path.exists(), "Conversation history file should exist after saving");
+        
+        // Verify the file contains valid JSON
+        let file_content = std::fs::read_to_string(&file_path).expect("Should be able to read saved file");
+        assert!(!file_content.is_empty(), "Saved file should not be empty");
+        assert!(file_content.contains(&session_id), "File should contain session ID");
+        assert!(file_content.contains("Hello, AI assistant!"), "File should contain user message");
         
         // Load from file
         let loaded_history = ConversationHistory::load_from_file(&session_id)
             .expect("Failed to load conversation history");
         
-        // Verify loaded data matches original
-        assert_eq!(loaded_history.session_id, original_history.session_id);
-        assert_eq!(loaded_history.messages.len(), original_history.messages.len());
-        assert_eq!(loaded_history.messages[0].content, "Hello");
-        assert_eq!(loaded_history.messages[1].content, "Hi there!");
-        assert_eq!(loaded_history.created_at, original_history.created_at);
+        // Verify all data matches between original and loaded versions
+        assert_eq!(loaded_history.session_id, original_history.session_id, "Session ID should match");
+        assert_eq!(loaded_history.messages.len(), original_message_count, "Message count should match");
+        assert_eq!(loaded_history.created_at, original_created_at, "Created timestamp should match");
+        assert_eq!(loaded_history.updated_at, original_updated_at, "Updated timestamp should match");
         
-        // Restore original data directory
-        std::env::set_var("DATA_DIR", original_data_dir);
+        // Verify individual messages
+        for (i, (original_msg, loaded_msg)) in original_history.messages.iter().zip(loaded_history.messages.iter()).enumerate() {
+            assert_eq!(loaded_msg.role, original_msg.role, "Message {} role should match", i);
+            assert_eq!(loaded_msg.content, original_msg.content, "Message {} content should match", i);
+            assert_eq!(loaded_msg.timestamp, original_msg.timestamp, "Message {} timestamp should match", i);
+        }
+        
+        // Test that we can load the same file multiple times consistently
+        let loaded_again = ConversationHistory::load_from_file(&session_id)
+            .expect("Should be able to load the same file multiple times");
+        assert_eq!(loaded_again.messages.len(), loaded_history.messages.len(), "Multiple loads should be consistent");
+        
+        // Restore original directory
+        std::env::set_current_dir(original_cwd).unwrap();
     }
 
     /// Test loading non-existent conversation history file
