@@ -58,8 +58,8 @@ Based on PRD: `prd-kindle-ai-chat.md`
     - [x] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
 
 - [ ] **3.0 Build the Frontend UI with htmx**
-  - [ ] 3.1 Download `htmx.min.js` (1.9.12) and place it in the `static/` directory.
-  - [ ] 3.2 Structure `static/index.html` with a scrollable history pane, a resizable `<textarea>`, and a submit button.
+  - [x] 3.1 Download `htmx.min.js` (1.9.12) and place it in the `static/` directory.
+  - [x] 3.2 Structure `static/index.html` with a scrollable history pane, a resizable `<textarea>`, and a submit button.
   - [ ] 3.3 Use htmx attributes (`hx-post`, `hx-target`, `hx-swap`) on the form to send data to `/chat` and append the response to the history pane.
   - [ ] 3.4 Create `static/style.css` with a minimal, high-contrast, single-column layout using a large serif font suitable for e-ink.
 

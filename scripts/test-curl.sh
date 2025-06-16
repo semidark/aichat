@@ -175,16 +175,16 @@ test_chat_endpoint() {
     
     local response=$(curl -s -w "HTTPSTATUS:%{http_code};TIME:%{time_total}" \
         -X POST "${SERVER_URL}/api/chat" \
-        -H "Content-Type: application/json" \
-        -d '{"message": "Hello, AI! This is a test message."}')
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d 'message=Hello, AI! This is a test message.')
     
     local http_code=$(echo "$response" | grep -o "HTTPSTATUS:[0-9]*" | cut -d: -f2)
     local time_total=$(echo "$response" | grep -o "TIME:[0-9.]*" | cut -d: -f2)
     local body=$(echo "$response" | sed -E 's/HTTPSTATUS:[0-9]*;TIME:[0-9.]*$//')
     
     if [ "$http_code" = "200" ]; then
-        if echo "$body" | grep -q '"status"'; then
-            log_success "POST /api/chat returned 200 OK with JSON response (${time_total}s)"
+        if echo "$body" | grep -q '<div class="message'; then
+            log_success "POST /api/chat returned 200 OK with HTML response (${time_total}s)"
             
             # Check response time (should be reasonable for Kindle)
             local time_numeric=$(echo "$time_total" | cut -d. -f1)
@@ -194,7 +194,7 @@ test_chat_endpoint() {
                 log_warning "Response time is slow for Kindle: ${time_total}s"
             fi
         else
-            log_error "POST /api/chat returned 200 but JSON response is malformed"
+            log_error "POST /api/chat returned 200 but HTML response is malformed"
         fi
     else
         log_error "POST /api/chat returned HTTP $http_code (expected 200)"
@@ -213,8 +213,8 @@ test_session_persistence() {
     local response1=$(curl -s -w "HTTPSTATUS:%{http_code}" \
         -c /tmp/test-cookies.txt \
         -X POST "${SERVER_URL}/api/chat" \
-        -H "Content-Type: application/json" \
-        -d '{"message": "First message"}')
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d 'message=First message')
     
     local http_code1=$(echo "$response1" | grep -o "HTTPSTATUS:[0-9]*" | cut -d: -f2)
     
@@ -227,8 +227,8 @@ test_session_persistence() {
             local response2=$(curl -s -w "HTTPSTATUS:%{http_code}" \
                 -b /tmp/test-cookies.txt \
                 -X POST "${SERVER_URL}/api/chat" \
-                -H "Content-Type: application/json" \
-                -d '{"message": "Second message"}')
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -d 'message=Second message')
             
             local http_code2=$(echo "$response2" | grep -o "HTTPSTATUS:[0-9]*" | cut -d: -f2)
             
@@ -274,8 +274,8 @@ test_session_files() {
     
     # Send a message to create a session file
     curl -s "${SERVER_URL}/api/chat" \
-        -H "Content-Type: application/json" \
-        -d '{"message": "Test session file creation"}' > /dev/null
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d 'message=Test session file creation' > /dev/null
     
     # Check if session files exist
     if [ -d "data" ] && [ "$(ls -A data/*.json 2>/dev/null | wc -l)" -gt 0 ]; then

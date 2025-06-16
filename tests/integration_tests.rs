@@ -2,15 +2,14 @@
 //! 
 //! These tests verify the HTTP endpoints and web functionality of the Kindle AI Chat
 //! application using Rocket's testing framework. They test the complete request/response
-//! cycle including session management, cookie handling, and JSON responses.
+//! cycle including session management, cookie handling, and HTML responses for htmx.
 
 use rocket::local::asynchronous::Client;
 use rocket::http::{Status, ContentType, Cookie};
-use serde_json;
 use uuid;
 
 // Import our library functions and types
-use aichat::{rocket, ChatRequest, ChatResponse};
+use aichat::rocket;
 
 /// Helper function to create a test client
 /// 
@@ -60,22 +59,20 @@ mod tests {
     /// 1. The endpoint responds with a 200 OK status
     /// 2. A `session_id` cookie is created in the response
     /// 3. The cookie value is a valid UUID
-    /// 4. The response contains the expected JSON structure
+    /// 4. The response contains HTML content for htmx
     #[rocket::async_test]
     async fn test_chat_endpoint_creates_session_cookie_on_first_visit() {
         let client = create_test_client().await;
         
-        // Create a chat request - this simulates a user's first message
-        let chat_request = ChatRequest {
-            message: "Hello, this is my first message!".to_string(),
-        };
+        // Create form data - this simulates what htmx sends on a user's first message
+        let form_data = "message=Hello, this is my first message!";
         
-        // Make a POST request to /api/chat with JSON content
+        // Make a POST request to /api/chat with form data
         // Note: we deliberately don't set any cookies to simulate a first visit
         let response = client
             .post("/api/chat")
-            .header(ContentType::JSON)
-            .json(&chat_request)
+            .header(ContentType::Form)
+            .body(form_data)
             .dispatch()
             .await;
         
@@ -104,18 +101,22 @@ mod tests {
         assert!(session_cookie.http_only().unwrap_or(false), 
                 "Session cookie should be HTTP-only for security");
         
-        // Verify the response body contains valid JSON with expected structure
+        // Verify the response body contains HTML content for htmx
         let response_body = response.into_string().await
             .expect("Response should have a body");
         
-        let chat_response: ChatResponse = serde_json::from_str(&response_body)
-            .expect("Response should be valid ChatResponse JSON");
+        // Verify it's HTML content with expected structure
+        // Note: User message is displayed immediately by JavaScript, server only returns assistant message
+        assert!(response_body.contains("<div class=\"message assistant\">"), 
+                "Response should contain HTML assistant message div");
+        assert!(!response_body.contains("<div class=\"message user\">"), 
+                "Response should NOT contain HTML user message div (handled by JavaScript)");
+        assert!(!response_body.contains("Hello, this is my first message!"), 
+                "Response should NOT contain the original user message (handled by JavaScript)");
         
-        // Verify response contains expected fields
-        assert!(!chat_response.response.is_empty(), 
-                "Chat response should contain a non-empty response");
-        assert_eq!(chat_response.status, "success", 
-                   "Chat response status should be 'success'");
+        // Verify it's NOT JSON
+        assert!(!response_body.starts_with("{"), 
+                "Response should be HTML, not JSON");
     }
     
     /// Test POST /api/chat session persistence on subsequent visit (Task 2.T.3.3)
@@ -131,14 +132,12 @@ mod tests {
         let client = create_test_client().await;
         
         // FIRST REQUEST: Create a session with the initial message
-        let first_chat_request = ChatRequest {
-            message: "This is my first message in the conversation".to_string(),
-        };
+        let first_form_data = "message=This is my first message in the conversation";
         
         let first_response = client
             .post("/api/chat")
-            .header(ContentType::JSON)
-            .json(&first_chat_request)
+            .header(ContentType::Form)
+            .body(first_form_data)
             .dispatch()
             .await;
         
@@ -159,29 +158,27 @@ mod tests {
         uuid::Uuid::parse_str(&original_session_id)
             .expect("Session ID should be a valid UUID format");
         
-        // Parse the first response to ensure it's valid
+        // Verify the first response contains HTML
         let first_response_body = first_response.into_string().await
             .expect("First response should have a body");
         
-        let first_chat_response: ChatResponse = serde_json::from_str(&first_response_body)
-            .expect("First response should be valid ChatResponse JSON");
-        
-        assert_eq!(first_chat_response.status, "success", 
-                   "First chat response status should be 'success'");
+        // Note: User message is displayed immediately by JavaScript, server only returns assistant message
+        assert!(!first_response_body.contains("<div class=\"message user\">"), 
+                "First response should NOT contain HTML user message (handled by JavaScript)");
+        assert!(!first_response_body.contains("This is my first message in the conversation"), 
+                "First response should NOT contain the user's message content (handled by JavaScript)");
         
         // SECOND REQUEST: Use the existing session cookie
-        let second_chat_request = ChatRequest {
-            message: "This is my second message in the same conversation".to_string(),
-        };
+        let second_form_data = "message=This is my second message in the same conversation";
         
         // Create a cookie to send with the second request
         let cookie_for_second_request = Cookie::new("session_id", original_session_id.clone());
         
         let second_response = client
             .post("/api/chat")
-            .header(ContentType::JSON)
+            .header(ContentType::Form)
             .cookie(cookie_for_second_request)
-            .json(&second_chat_request)
+            .body(second_form_data)
             .dispatch()
             .await;
         
@@ -205,142 +202,66 @@ mod tests {
                        "Session ID should remain the same across requests");
         }
         
-        // Parse the second response to ensure it's valid
+        // Verify the second response contains HTML and our message
         let second_response_body = second_response.into_string().await
             .expect("Second response should have a body");
         
-        let second_chat_response: ChatResponse = serde_json::from_str(&second_response_body)
-            .expect("Second response should be valid ChatResponse JSON");
+        // Note: User message is displayed immediately by JavaScript, server only returns assistant message
+        assert!(!second_response_body.contains("<div class=\"message user\">"), 
+                "Second response should NOT contain HTML user message (handled by JavaScript)");
+        assert!(second_response_body.contains("<div class=\"message assistant\">"), 
+                "Second response should contain HTML assistant message");
+        assert!(!second_response_body.contains("This is my second message in the same conversation"), 
+                "Second response should NOT contain the user's second message (handled by JavaScript)");
         
-        assert_eq!(second_chat_response.status, "success", 
-                   "Second chat response status should be 'success'");
-        
-        // Additional verification: Both responses should be non-empty 
-        // (the content will be error responses in test environment, but that's expected)
-        assert!(!first_chat_response.response.is_empty(), 
-                "First chat response should contain content");
-        assert!(!second_chat_response.response.is_empty(), 
-                "Second chat response should contain content");
-        
-        // Both responses should have the same status indicating successful API handling
-        // even if the LLM call itself fails (which is expected in test environment)
-        assert_eq!(first_chat_response.status, "success", 
-                   "Both responses should have success status");
-        assert_eq!(second_chat_response.status, "success", 
-                   "Both responses should have success status");
+        // Verify both responses are HTML, not JSON
+        assert!(!first_response_body.starts_with("{"), 
+                "First response should be HTML, not JSON");
+        assert!(!second_response_body.starts_with("{"), 
+                "Second response should be HTML, not JSON");
     }
     
-    /// Test POST /api/chat JSON response format validation (Task 2.T.3.4)
+
+
+    /// Test form-based chat endpoint for htmx integration (Task 3.2)
     /// 
-    /// This test focuses specifically on validating the JSON response structure from the chat
-    /// endpoint. It confirms that:
-    /// 1. The response is valid JSON that can be parsed
-    /// 2. The JSON contains all required fields with correct types
-    /// 3. The JSON structure matches the ChatResponse schema exactly
-    /// 4. Field values are within expected constraints (non-null, proper types, etc.)
-    /// 5. The response can be round-trip serialized/deserialized correctly
+    /// This test verifies that the HTML form endpoint properly handles form data
+    /// and returns HTML instead of JSON, which is required for htmx integration.
     #[rocket::async_test]
-    async fn test_chat_endpoint_json_response_format() {
+    async fn test_chat_endpoint_form_data_html_response() {
         let client = create_test_client().await;
         
-        // Create a simple chat request for testing JSON response format
-        let chat_request = ChatRequest {
-            message: "Test message for JSON format validation".to_string(),
-        };
+        // Create form data - this simulates what htmx sends
+        let form_data = "message=Hello from form submission!";
         
-        // Make the POST request
+        // Make a POST request with form data (application/x-www-form-urlencoded)
         let response = client
             .post("/api/chat")
-            .header(ContentType::JSON)
-            .json(&chat_request)
+            .header(ContentType::Form)
+            .body(form_data)
             .dispatch()
             .await;
         
-        // Verify HTTP response is successful
-        assert_eq!(response.status(), Status::Ok,
-                   "Chat endpoint should return 200 OK for JSON format test");
+        // Assert that we get a 200 OK status
+        assert_eq!(response.status(), Status::Ok, 
+                   "Form-based chat endpoint should return 200 OK status");
         
-        // Get the raw response body for JSON validation
+        // Get the response body
         let response_body = response.into_string().await
             .expect("Response should have a body");
-        assert!(!response_body.is_empty(), 
-                "Response body should not be empty");
         
-        // 1. Test that the response is valid JSON by parsing it as a generic Value first
-        let json_value: serde_json::Value = serde_json::from_str(&response_body)
-            .expect("Response should be valid JSON");
+        // Verify it's HTML content, not JSON
+        // Note: User message is displayed immediately by JavaScript, server only returns assistant message
+        assert!(!response_body.contains("<div class=\"message user\">"), 
+                "Response should NOT contain HTML user message div (handled by JavaScript)");
+        assert!(response_body.contains("<div class=\"message assistant\">"), 
+                "Response should contain HTML assistant message div");
+        assert!(!response_body.contains("Hello from form submission!"), 
+                "Response should NOT contain the original user message (handled by JavaScript)");
         
-        // 2. Validate JSON structure - ensure it's an object with expected top-level fields
-        assert!(json_value.is_object(), 
-                "JSON response should be an object/map");
-        
-        let json_object = json_value.as_object()
-            .expect("JSON response should be an object");
-        
-        // 3. Check for required fields existence and types
-        assert!(json_object.contains_key("response"), 
-                "JSON should contain 'response' field");
-        assert!(json_object.contains_key("status"), 
-                "JSON should contain 'status' field");
-        
-        // Validate field types
-        let response_field = json_object.get("response")
-            .expect("'response' field should exist");
-        assert!(response_field.is_string(), 
-                "'response' field should be a string");
-        
-        let status_field = json_object.get("status")
-            .expect("'status' field should exist");
-        assert!(status_field.is_string(), 
-                "'status' field should be a string");
-        
-        // 4. Validate field content constraints
-        let response_text = response_field.as_str()
-            .expect("'response' field should be a valid string");
-        assert!(!response_text.is_empty(), 
-                "'response' field should not be empty");
-        
-        let status_text = status_field.as_str()
-            .expect("'status' field should be a valid string");
-        assert!(!status_text.is_empty(), 
-                "'status' field should not be empty");
-        assert_eq!(status_text, "success", 
-                   "'status' field should have value 'success'");
-        
-        // 5. Test proper deserialization into our ChatResponse struct
-        let chat_response: ChatResponse = serde_json::from_str(&response_body)
-            .expect("Response should deserialize into ChatResponse struct");
-        
-        // Verify the deserialized struct matches our expectations
-        assert!(!chat_response.response.is_empty(),
-                "ChatResponse.response should not be empty");
-        assert_eq!(chat_response.status, "success",
-                   "ChatResponse.status should be 'success'");
-        
-        // 6. Test round-trip serialization to ensure no data loss
-        let reserialized_json = serde_json::to_string(&chat_response)
-            .expect("ChatResponse should serialize back to JSON");
-        
-        let reparsed_response: ChatResponse = serde_json::from_str(&reserialized_json)
-            .expect("Round-trip serialization should work");
-        
-        // Verify round-trip integrity
-        assert_eq!(reparsed_response.response, chat_response.response,
-                   "Round-trip serialization should preserve 'response' field");
-        assert_eq!(reparsed_response.status, chat_response.status,
-                   "Round-trip serialization should preserve 'status' field");
-        
-        // 7. Validate JSON formatting is reasonable (not malformed)
-        assert!(response_body.contains("\"response\":") || response_body.contains("\"response\" :"),
-                "JSON should contain properly formatted 'response' field");
-        assert!(response_body.contains("\"status\":") || response_body.contains("\"status\" :"),
-                "JSON should contain properly formatted 'status' field");
-        
-        // Ensure JSON doesn't contain obvious malformation
-        assert!(!response_body.contains("}{"), 
-                "JSON should not contain malformed object boundaries");
-        assert_eq!(response_body.matches('{').count(), response_body.matches('}').count(),
-                   "JSON should have balanced braces");
+        // Verify it's NOT JSON
+        assert!(!response_body.starts_with("{"), 
+                "Response should be HTML, not JSON");
     }
 
     /// Placeholder test to ensure the test framework is working

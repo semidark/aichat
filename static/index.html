@@ -5,44 +5,591 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kindle AI Chat</title>
     <style>
-        /* Minimal, high-contrast CSS optimized for Kindle e-ink display */
-        body {
-            font-family: "Times New Roman", serif;
-            font-size: 18px;
-            line-height: 1.4;
-            color: #000;
-            background-color: #fff;
-            margin: 20px;
+        /* CSS Variables for consistent theming */
+        :root {
+            --color-primary: #1a1a1a;
+            --color-secondary: #4a4a4a;
+            --color-background: #ffffff;
+            --color-surface: #f8f8f8;
+            --color-border: #d0d0d0;
+            --color-border-dark: #888888;
+            --color-text: #1a1a1a;
+            --color-text-secondary: #555555;
+            --color-accent: #2563eb;
+            --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.15);
+            --border-radius: 6px;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+        }
+
+        /* Base styles optimized for e-ink */
+        * {
+            margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Times New Roman", "Georgia", serif;
+            font-size: 18px;
+            line-height: 1.6;
+            color: var(--color-text);
+            background-color: var(--color-background);
+            height: 100vh;
+            overflow: hidden;
         }
         
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
+        /* Main container using table layout for Kindle compatibility */
+        .app-container {
+            display: table;
+            width: 100%;
+            height: 100vh;
+            border-collapse: separate;
+        }
+        
+        /* Header section */
+        .app-header {
+            display: table-row;
+            height: 80px;
+        }
+        
+        .header-content {
+            display: table-cell;
+            vertical-align: middle;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background-color: var(--color-surface);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .app-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--color-primary);
             text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        .app-subtitle {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            text-align: center;
+            margin-top: var(--spacing-xs);
+            font-style: italic;
         }
         
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        /* Chat area */
+        .chat-area {
+            display: table-row;
+            height: calc(100vh - 80px - 140px); /* Subtract header (80px) and input (140px) heights */
         }
         
+        .chat-content {
+            display: table-cell;
+            vertical-align: top;
+            position: relative;
+            height: calc(100vh - 80px - 140px); /* Ensure the content cell respects the height */
+        }
+
+        .messages-container {
+            height: calc(100vh - 80px - 140px); /* Explicit height calculation for the scrollable container */
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+            background-color: var(--color-background);
+        }
+        
+        /* Message styling */
         .message {
+            margin-bottom: var(--spacing-lg);
+            max-width: 100%;
+        }
+
+        .message-card {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .message.user .message-card {
+            background-color: var(--color-background);
+            border-color: var(--color-border-dark);
+            margin-left: 10%;
+        }
+
+        .message.assistant .message-card {
+            background-color: var(--color-surface);
+            border-left: 4px solid var(--color-accent);
+            margin-right: 10%;
+        }
+        
+        .message-header {
+            display: table;
+            width: 100%;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .message-avatar {
+            display: table-cell;
+            width: 32px;
+            vertical-align: top;
+            padding-right: var(--spacing-sm);
+        }
+
+        .avatar-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            display: table;
+        }
+
+        .avatar-icon svg {
+            display: table-cell;
+            vertical-align: middle;
             text-align: center;
-            margin: 40px 0;
-            padding: 20px;
-            border: 2px solid #000;
+            width: 16px;
+            height: 16px;
+            margin: 4px auto;
+            fill: white;
+        }
+
+        .message.user .avatar-icon {
+            background-color: var(--color-secondary);
+        }
+
+        .message-meta {
+            display: table-cell;
+            vertical-align: top;
+        }
+        
+        .message-role {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--color-primary);
+            margin-bottom: 2px;
+        }
+        
+        .message-content {
+            font-size: 17px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--color-text);
+        }
+        
+        .loading-indicator {
+            font-style: italic;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+        }
+
+        /* Input area */
+        .input-area {
+            display: table-row;
+            height: 140px;
+        }
+        
+        .input-content {
+            display: table-cell;
+            vertical-align: top;
+            background-color: var(--color-surface);
+            border-top: 2px solid var(--color-border);
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        
+        .input-form {
+            display: table;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .input-main {
+            display: table-cell;
+            width: 100%;
+            vertical-align: top;
+            padding-right: var(--spacing-md);
+        }
+        
+        .input-textarea {
+            width: 100%;
+            height: 90px;
+            padding: var(--spacing-md);
+            font-family: "Times New Roman", "Georgia", serif;
+            font-size: 17px;
+            line-height: 1.5;
+            border: 2px solid var(--color-border);
+            border-radius: var(--border-radius);
+            background-color: var(--color-background);
+            color: var(--color-text);
+            resize: vertical;
+            min-height: 60px;
+            max-height: 200px;
+        }
+        
+        .input-textarea:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-actions {
+            display: table-cell;
+            width: 120px;
+            vertical-align: top;
+        }
+        
+        .send-button {
+            width: 100%;
+            height: 90px;
+            background-color: var(--color-accent);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-family: "Times New Roman", "Georgia", serif;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: var(--shadow-light);
+            transition: background-color 0.2s ease;
+        }
+        
+        .send-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .send-button:active {
+            background-color: #1e40af;
+            transform: translateY(1px);
+        }
+        
+        .send-button:disabled {
+            background-color: var(--color-border);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Welcome message styling */
+        .welcome-message {
+            text-align: center;
+            margin: var(--spacing-xl) auto;
+            max-width: 600px;
+        }
+        
+        .welcome-message .message-card {
+            background: linear-gradient(135deg, var(--color-surface) 0%, #f0f0f0 100%);
+            border: 2px solid var(--color-border);
+            padding: var(--spacing-xl);
+        }
+
+        .welcome-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .welcome-text {
+            font-size: 17px;
+            color: var(--color-text);
+            line-height: 1.7;
+        }
+
+        /* Scrollbar styling for Kindle compatibility */
+        .messages-container::-webkit-scrollbar {
+            width: 16px;
+        }
+        
+        .messages-container::-webkit-scrollbar-track {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+        }
+        
+        .messages-container::-webkit-scrollbar-thumb {
+            background-color: var(--color-border-dark);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+        }
+        
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: var(--color-secondary);
+        }
+
+        /* Status indicators */
+        .status-indicator {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-lg);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            display: none;
+        }
+
+        .status-indicator.show {
+            display: block;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media screen and (max-width: 768px) {
+            .app-title {
+                font-size: 24px;
+            }
+            
+            .messages-container {
+                padding: var(--spacing-md);
+            }
+            
+            .message.user .message-card {
+                margin-left: 5%;
+            }
+            
+            .message.assistant .message-card {
+                margin-right: 5%;
+            }
+            
+            .input-content {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+            
+            .input-actions {
+                width: 100px;
+            }
+        }
+
+        /* High contrast mode for better e-ink readability */
+        @media (prefers-contrast: high) {
+            :root {
+                --color-border: #000000;
+                --color-border-dark: #000000;
+                --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.3);
+                --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.3);
+            }
+            
+            .message-card {
+                border-width: 2px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Kindle AI Chat</h1>
-        <div class="message">
-            <p><strong>Hello World!</strong></p>
-            <p>Welcome to Kindle AI Chat - your AI companion optimized for e-ink displays.</p>
-            <p>Server is running successfully!</p>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="app-title">Kindle AI Chat</div>
+                <div class="app-subtitle">Intelligent conversations, optimized for e-ink</div>
+            </div>
+        </div>
+        
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="chat-content">
+                <div id="messages-container" class="messages-container">
+                    <!-- Welcome Message -->
+                    <div class="welcome-message">
+                        <div class="message-card">
+                            <div class="welcome-title">Welcome to Kindle AI Chat</div>
+                            <div class="welcome-text">
+                                I'm your AI assistant, specially optimized for e-ink displays. I'm here to help with questions, creative writing, problem-solving, and thoughtful conversation.
+                                <br><br>
+                                Type your message below and press Send to begin our conversation.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status indicator -->
+                <div id="status-indicator" class="status-indicator">
+                    Processing your message...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-content">
+                <form id="chat-form" class="input-form" 
+                      hx-post="/api/chat" 
+                      hx-target="#messages-container"
+                      hx-swap="beforeend"
+                      hx-indicator="#status-indicator">
+                    <div class="input-main">
+                        <textarea id="message-input" 
+                                  name="message" 
+                                  class="input-textarea"
+                                  placeholder="Ask me anything..."
+                                  required
+                                  autofocus></textarea>
+                    </div>
+                    <div class="input-actions">
+                        <button type="submit" id="send-button" class="send-button">
+                            Send
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+    
+    <!-- Load htmx -->
+    <script src="htmx.min.js"></script>
+    
+    <!-- ES5-compatible JavaScript -->
+    <script>
+        // Main application logic
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.getElementById('chat-form');
+            var messageInput = document.getElementById('message-input');
+            var messagesContainer = document.getElementById('messages-container');
+            var sendButton = document.getElementById('send-button');
+            var statusIndicator = document.getElementById('status-indicator');
+            
+            // Auto-scroll to bottom when new content is added
+            function scrollToBottom() {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // Create message element
+            function createMessage(role, content) {
+                var messageDiv = document.createElement('div');
+                messageDiv.className = 'message ' + role;
+
+                var cardDiv = document.createElement('div');
+                cardDiv.className = 'message-card';
+
+                var headerDiv = document.createElement('div');
+                headerDiv.className = 'message-header';
+
+                var avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+
+                var avatarIcon = document.createElement('div');
+                avatarIcon.className = 'avatar-icon';
+                
+                var iconSvg = document.createElement('svg');
+                iconSvg.setAttribute('viewBox', '0 0 16 16');
+                iconSvg.setAttribute('fill', 'currentColor');
+
+                if (role === 'user') {
+                    iconSvg.innerHTML = '<path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>';
+                } else {
+                    iconSvg.innerHTML = '<path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.292-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.292c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>';
+                }
+
+                avatarIcon.appendChild(iconSvg);
+                avatarDiv.appendChild(avatarIcon);
+
+                var metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+
+                var roleDiv = document.createElement('div');
+                roleDiv.className = 'message-role';
+                roleDiv.textContent = role === 'user' ? 'You' : 'Assistant';
+
+                metaDiv.appendChild(roleDiv);
+                headerDiv.appendChild(avatarDiv);
+                headerDiv.appendChild(metaDiv);
+
+                var contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = content;
+
+                cardDiv.appendChild(headerDiv);
+                cardDiv.appendChild(contentDiv);
+                messageDiv.appendChild(cardDiv);
+
+                return messageDiv;
+            }
+
+            // Handle form submission
+            form.addEventListener('submit', function(e) {
+                var message = messageInput.value.trim();
+                if (!message) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Add user message immediately
+                var userMessage = createMessage('user', message);
+                messagesContainer.appendChild(userMessage);
+                
+                // Clear input and disable send button
+                messageInput.value = '';
+                sendButton.disabled = true;
+                sendButton.textContent = 'Sending...';
+
+                // Scroll to bottom
+                scrollToBottom();
+            });
+            
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            });
+            
+            // Handle Enter key (Shift+Enter for new line)
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.keyCode === 13 && !e.shiftKey) {
+                    e.preventDefault();
+                    if (messageInput.value.trim()) {
+                        // Create and dispatch submit event
+                        var submitEvent;
+                    if (typeof Event === 'function') {
+                            submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    } else {
+                        // Fallback for older browsers
+                            submitEvent = document.createEvent('Event');
+                            submitEvent.initEvent('submit', true, true);
+                        }
+                        form.dispatchEvent(submitEvent);
+                    }
+                }
+            });
+
+            // Remove welcome message when first real message is added
+            var welcomeRemoved = false;
+            function removeWelcomeMessage() {
+                if (!welcomeRemoved) {
+                    var welcomeMsg = document.querySelector('.welcome-message');
+                    if (welcomeMsg) {
+                        welcomeMsg.style.display = 'none';
+                        welcomeRemoved = true;
+                    }
+                }
+            }
+
+            // htmx event listeners
+            document.addEventListener('htmx:beforeRequest', function() {
+                removeWelcomeMessage();
+                statusIndicator.classList.add('show');
+        });
+        
+            document.addEventListener('htmx:afterRequest', function() {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+                statusIndicator.classList.remove('show');
+                scrollToBottom();
+            });
+
+            document.addEventListener('htmx:responseError', function() {
+                var errorMessage = createMessage('assistant', 'Sorry, there was an error processing your request. Please try again.');
+                messagesContainer.appendChild(errorMessage);
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+                statusIndicator.classList.remove('show');
+                scrollToBottom();
+            });
+        });
+    </script>
 </body>
 </html> 

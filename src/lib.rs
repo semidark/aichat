@@ -21,8 +21,9 @@ pub mod utils;
 // Rocket and web-related imports
 use rocket::fs::{FileServer, relative};
 use rocket::State;
-use rocket::serde::{Deserialize, Serialize, json::Json};
 use rocket::http::{Cookie, CookieJar, SameSite};
+use rocket::form::{Form, FromForm};
+use rocket::response::content::RawHtml;
 
 // Standard library imports
 use std::sync::Arc;
@@ -34,6 +35,7 @@ use parking_lot::RwLock;
 use uuid::Uuid;
 use chrono;
 use anyhow::Result;
+use serde::{Serialize, Deserialize};
 
 // Internal imports for LLM integration
 use crate::client::call_chat_completions;
@@ -43,24 +45,14 @@ use crate::utils::create_abort_signal;
 /// Application state type alias for cleaner code
 pub type AppState = Arc<RwLock<Config>>;
 
-/// Request structure for chat endpoint
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
-pub struct ChatRequest {
+/// Request structure for chat endpoint (Form data)
+#[derive(FromForm)]
+pub struct ChatForm {
     pub message: String,
 }
 
-/// Response structure for chat endpoint
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
-pub struct ChatResponse {
-    pub response: String,
-    pub status: String,
-}
-
 /// Individual message in a conversation
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(crate = "rocket::serde")]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ConversationMessage {
     pub role: String,    // "user" or "assistant"
     pub content: String,
@@ -69,7 +61,6 @@ pub struct ConversationMessage {
 
 /// Complete conversation history for a session
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct ConversationHistory {
     pub session_id: String,
     pub messages: Vec<ConversationMessage>,
@@ -184,13 +175,13 @@ pub fn get_or_create_session_id(cookies: &CookieJar<'_>) -> String {
     session_id
 }
 
-/// Main chat endpoint handler
-#[post("/chat", data = "<chat_request>")]
+/// Main chat endpoint handler for htmx form submission (returns HTML)
+#[post("/chat", data = "<chat_form>")]
 pub async fn chat(
-    chat_request: Json<ChatRequest>, 
+    chat_form: Form<ChatForm>, 
     cookies: &CookieJar<'_>,
     state: &State<AppState>
-) -> Json<ChatResponse> {
+) -> RawHtml<String> {
     // Get or create session ID
     let session_id = get_or_create_session_id(cookies);
     
@@ -204,8 +195,20 @@ pub async fn chat(
     };
     
     // Add user message to history
-    let user_message = &chat_request.message;
+    let user_message = &chat_form.message;
     history.add_message("user".to_string(), user_message.clone());
+    
+    // HTML escape function for security
+    let html_escape = |s: &str| {
+        s.replace('&', "&amp;")
+         .replace('<', "&lt;")
+         .replace('>', "&gt;")
+         .replace('"', "&quot;")
+         .replace('\'', "&#x27;")
+    };
+    
+    // Note: User message HTML is handled by JavaScript for immediate display
+    // We only return the assistant message from the server
     
     // Create the global config for LLM integration
     let global_config = state.inner().clone();
@@ -234,10 +237,18 @@ pub async fn chat(
         eprintln!("Error saving conversation history: {}", e);
     }
     
-    Json(ChatResponse {
-        response: response_text,
-        status: "success".to_string(),
-    })
+    // Create assistant message HTML
+    let assistant_html = format!(
+        r#"<div class="message assistant">
+            <div class="message-role">Assistant:</div>
+            <div class="message-content">{}</div>
+        </div>"#,
+        html_escape(&response_text)
+    );
+    
+    // Return only assistant message as HTML
+    // (User message is already displayed immediately by JavaScript for better UX)
+    RawHtml(assistant_html)
 }
 
 /// Helper function to call the LLM using aichat's client system
