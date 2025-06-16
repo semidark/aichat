@@ -30,7 +30,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 1.5 Create a basic `static/index.html` with a "Hello World" message to confirm the server is working.
 
 - [ ] **2.0 Implement Backend Core Chat and Session Logic**
-  - [ ] 2.1 Create a `POST /chat` endpoint in Rocket to receive user input.
+  - [x] 2.1 Create a `POST /chat` endpoint in Rocket to receive user input.
   - [ ] 2.2 Implement cookie-based session handling: on first visit, generate a UUID, set it as a persistent cookie, and create a `data/{uuid}.json` file.
   - [ ] 2.3 On subsequent requests, read the UUID from the cookie to load the corresponding conversation history from the JSON file.
   - [ ] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
