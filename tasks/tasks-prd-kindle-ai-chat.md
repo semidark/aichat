@@ -37,7 +37,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
   - [ ] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
 
-  - [ ] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
+  - [x] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
   - [x] **2.T.1 Refactor for Testability & Create Integration Test Harness**
     - [x] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
     - [x] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
@@ -51,11 +51,11 @@ Based on PRD: `prd-kindle-ai-chat.md`
     - [~] 2.T.2.4 ~~Write unit tests for `get_or_create_session_id()` to validate both the creation of a new session cookie and the retrieval of an existing one.~~
     **NOT FEASIBLE**: This function requires Rocket's `CookieJar` which is only available in HTTP contexts. Session management will be tested via integration tests in 2.T.3.2 and 2.T.3.3.
 
-  - [ ] **2.T.3 Implement Integration Tests for Web Endpoints**
+  - [x] **2.T.3 Implement Integration Tests for Web Endpoints**
     - [x] 2.T.3.1 In `tests/integration_tests.rs`, write a test to make a `GET /` request and assert a `200 OK` status to confirm the static file server works.
     - [x] 2.T.3.2 Write an integration test for `POST /api/chat` that simulates a user's first visit and asserts that a `session_id` cookie is successfully created in the response.
     - [x] 2.T.3.3 Write an integration test that simulates a subsequent visit by sending a cookie and verifies the server uses the existing session.
-    - [ ] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
+    - [x] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
 
 - [ ] **3.0 Build the Frontend UI with htmx**
   - [ ] 3.1 Download `htmx.min.js` (1.9.12) and place it in the `static/` directory.

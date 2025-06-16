@@ -230,9 +230,118 @@ mod tests {
                    "Both responses should have success status");
     }
     
-    // TODO: Implement test for POST /api/chat JSON response format (Task 2.T.3.4)
-    // This test should confirm the basic JSON response from /api/chat is
-    // well-formed and contains the expected fields.
+    /// Test POST /api/chat JSON response format validation (Task 2.T.3.4)
+    /// 
+    /// This test focuses specifically on validating the JSON response structure from the chat
+    /// endpoint. It confirms that:
+    /// 1. The response is valid JSON that can be parsed
+    /// 2. The JSON contains all required fields with correct types
+    /// 3. The JSON structure matches the ChatResponse schema exactly
+    /// 4. Field values are within expected constraints (non-null, proper types, etc.)
+    /// 5. The response can be round-trip serialized/deserialized correctly
+    #[rocket::async_test]
+    async fn test_chat_endpoint_json_response_format() {
+        let client = create_test_client().await;
+        
+        // Create a simple chat request for testing JSON response format
+        let chat_request = ChatRequest {
+            message: "Test message for JSON format validation".to_string(),
+        };
+        
+        // Make the POST request
+        let response = client
+            .post("/api/chat")
+            .header(ContentType::JSON)
+            .json(&chat_request)
+            .dispatch()
+            .await;
+        
+        // Verify HTTP response is successful
+        assert_eq!(response.status(), Status::Ok,
+                   "Chat endpoint should return 200 OK for JSON format test");
+        
+        // Get the raw response body for JSON validation
+        let response_body = response.into_string().await
+            .expect("Response should have a body");
+        assert!(!response_body.is_empty(), 
+                "Response body should not be empty");
+        
+        // 1. Test that the response is valid JSON by parsing it as a generic Value first
+        let json_value: serde_json::Value = serde_json::from_str(&response_body)
+            .expect("Response should be valid JSON");
+        
+        // 2. Validate JSON structure - ensure it's an object with expected top-level fields
+        assert!(json_value.is_object(), 
+                "JSON response should be an object/map");
+        
+        let json_object = json_value.as_object()
+            .expect("JSON response should be an object");
+        
+        // 3. Check for required fields existence and types
+        assert!(json_object.contains_key("response"), 
+                "JSON should contain 'response' field");
+        assert!(json_object.contains_key("status"), 
+                "JSON should contain 'status' field");
+        
+        // Validate field types
+        let response_field = json_object.get("response")
+            .expect("'response' field should exist");
+        assert!(response_field.is_string(), 
+                "'response' field should be a string");
+        
+        let status_field = json_object.get("status")
+            .expect("'status' field should exist");
+        assert!(status_field.is_string(), 
+                "'status' field should be a string");
+        
+        // 4. Validate field content constraints
+        let response_text = response_field.as_str()
+            .expect("'response' field should be a valid string");
+        assert!(!response_text.is_empty(), 
+                "'response' field should not be empty");
+        
+        let status_text = status_field.as_str()
+            .expect("'status' field should be a valid string");
+        assert!(!status_text.is_empty(), 
+                "'status' field should not be empty");
+        assert_eq!(status_text, "success", 
+                   "'status' field should have value 'success'");
+        
+        // 5. Test proper deserialization into our ChatResponse struct
+        let chat_response: ChatResponse = serde_json::from_str(&response_body)
+            .expect("Response should deserialize into ChatResponse struct");
+        
+        // Verify the deserialized struct matches our expectations
+        assert!(!chat_response.response.is_empty(),
+                "ChatResponse.response should not be empty");
+        assert_eq!(chat_response.status, "success",
+                   "ChatResponse.status should be 'success'");
+        
+        // 6. Test round-trip serialization to ensure no data loss
+        let reserialized_json = serde_json::to_string(&chat_response)
+            .expect("ChatResponse should serialize back to JSON");
+        
+        let reparsed_response: ChatResponse = serde_json::from_str(&reserialized_json)
+            .expect("Round-trip serialization should work");
+        
+        // Verify round-trip integrity
+        assert_eq!(reparsed_response.response, chat_response.response,
+                   "Round-trip serialization should preserve 'response' field");
+        assert_eq!(reparsed_response.status, chat_response.status,
+                   "Round-trip serialization should preserve 'status' field");
+        
+        // 7. Validate JSON formatting is reasonable (not malformed)
+        assert!(response_body.contains("\"response\":") || response_body.contains("\"response\" :"),
+                "JSON should contain properly formatted 'response' field");
+        assert!(response_body.contains("\"status\":") || response_body.contains("\"status\" :"),
+                "JSON should contain properly formatted 'status' field");
+        
+        // Ensure JSON doesn't contain obvious malformation
+        assert!(!response_body.contains("}{"), 
+                "JSON should not contain malformed object boundaries");
+        assert_eq!(response_body.matches('{').count(), response_body.matches('}').count(),
+                   "JSON should have balanced braces");
+    }
 
     /// Placeholder test to ensure the test framework is working
     /// 
