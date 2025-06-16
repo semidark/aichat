@@ -38,17 +38,18 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [ ] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
 
   - [ ] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
-  - [ ] **2.T.1 Refactor for Testability & Create Integration Test Harness**
+  - [x] **2.T.1 Refactor for Testability & Create Integration Test Harness**
     - [x] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
     - [x] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
     - [x] 2.T.1.3 Create a `src/lib.rs` and move the application logic there, turning our binary into a library that integration tests can use. `src/main.rs` will now just call the library.
     - [x] 2.T.1.4 Create the `tests/` directory and an empty `tests/integration_tests.rs` file.
 
-  - [ ] **2.T.2 Implement Unit Tests for Core Session Logic**
+  - [x] **2.T.2 Implement Unit Tests for Core Session Logic**
     - [x] 2.T.2.1 Add a `#[cfg(test)]` module at the bottom of the file containing the core logic (`src/lib.rs` after refactor).
     - [x] 2.T.2.2 Write a unit test for `ConversationHistory` to verify saving to and loading from a temporary file works correctly.
-    - [ ] 2.T.2.3 Write a unit test for `to_conversation_text()` to ensure it formats the prompt history correctly for the LLM.
-    - [ ] 2.T.2.4 Write unit tests for `get_or_create_session_id()` to validate both the creation of a new session cookie and the retrieval of an existing one.
+    - [x] 2.T.2.3 Write a unit test for `to_conversation_text()` to ensure it formats the prompt history correctly for the LLM.
+    - [~] 2.T.2.4 ~~Write unit tests for `get_or_create_session_id()` to validate both the creation of a new session cookie and the retrieval of an existing one.~~
+    **NOT FEASIBLE**: This function requires Rocket's `CookieJar` which is only available in HTTP contexts. Session management will be tested via integration tests in 2.T.3.2 and 2.T.3.3.
 
   - [ ] **2.T.3 Implement Integration Tests for Web Endpoints**
     - [ ] 2.T.3.1 In `tests/integration_tests.rs`, write a test to make a `GET /` request and assert a `200 OK` status to confirm the static file server works.
