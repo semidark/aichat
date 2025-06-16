@@ -44,14 +44,14 @@ use crate::utils::create_abort_signal;
 pub type AppState = Arc<RwLock<Config>>;
 
 /// Request structure for chat endpoint
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ChatRequest {
     pub message: String,
 }
 
 /// Response structure for chat endpoint
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ChatResponse {
     pub response: String,
