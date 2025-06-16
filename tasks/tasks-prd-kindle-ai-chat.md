@@ -45,7 +45,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
     - [x] 2.T.1.4 Create the `tests/` directory and an empty `tests/integration_tests.rs` file.
 
   - [ ] **2.T.2 Implement Unit Tests for Core Session Logic**
-    - [ ] 2.T.2.1 Add a `#[cfg(test)]` module at the bottom of the file containing the core logic (`src/lib.rs` after refactor).
+    - [x] 2.T.2.1 Add a `#[cfg(test)]` module at the bottom of the file containing the core logic (`src/lib.rs` after refactor).
     - [ ] 2.T.2.2 Write a unit test for `ConversationHistory` to verify saving to and loading from a temporary file works correctly.
     - [ ] 2.T.2.3 Write a unit test for `to_conversation_text()` to ensure it formats the prompt history correctly for the LLM.
     - [ ] 2.T.2.4 Write unit tests for `get_or_create_session_id()` to validate both the creation of a new session cookie and the retrieval of an existing one.

@@ -93,6 +93,7 @@ dependencies = [
  "simplelog",
  "syntect",
  "sys-locale",
+ "tempfile",
  "textwrap",
  "time",
  "tokio",

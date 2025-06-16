@@ -333,4 +333,147 @@ pub async fn run_cli(cli: crate::cli::Cli) -> Result<()> {
 pub async fn run_server() -> Result<()> {
     rocket().await.launch().await.map_err(|e| anyhow::anyhow!("Rocket error: {}", e))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    /// Helper function to create a temporary directory for test files
+    fn create_temp_data_dir() -> TempDir {
+        tempfile::tempdir().expect("Failed to create temp directory")
+    }
+
+    /// Test ConversationHistory creation and basic functionality
+    #[test]
+    fn test_conversation_history_new() {
+        let session_id = "test-session-123".to_string();
+        let history = ConversationHistory::new(session_id.clone());
+        
+        assert_eq!(history.session_id, session_id);
+        assert!(history.messages.is_empty());
+        assert!(history.created_at > 0);
+        assert_eq!(history.created_at, history.updated_at);
+    }
+
+    /// Test adding messages to conversation history
+    #[test]
+    fn test_conversation_history_add_message() {
+        let mut history = ConversationHistory::new("test-session".to_string());
+        
+        history.add_message("user".to_string(), "Hello, world!".to_string());
+        assert_eq!(history.messages.len(), 1);
+        assert_eq!(history.messages[0].role, "user");
+        assert_eq!(history.messages[0].content, "Hello, world!");
+        
+        history.add_message("assistant".to_string(), "Hi there!".to_string());
+        assert_eq!(history.messages.len(), 2);
+        assert_eq!(history.messages[1].role, "assistant");
+        assert_eq!(history.messages[1].content, "Hi there!");
+    }
+
+    /// Test conversation text formatting for LLM
+    #[test]
+    fn test_to_conversation_text() {
+        let mut history = ConversationHistory::new("test-session".to_string());
+        
+        // Test empty conversation
+        assert_eq!(history.to_conversation_text(), "");
+        
+        // Test single user message
+        history.add_message("user".to_string(), "What is Rust?".to_string());
+        assert_eq!(history.to_conversation_text(), "What is Rust?");
+        
+        // Test conversation with assistant response
+        history.add_message("assistant".to_string(), "Rust is a systems programming language.".to_string());
+        history.add_message("user".to_string(), "Tell me more.".to_string());
+        
+        let expected = "Human: What is Rust?\n\nAssistant: Rust is a systems programming language.\n\nTell me more.";
+        assert_eq!(history.to_conversation_text(), expected);
+    }
+
+    /// Test saving and loading conversation history to/from file
+    #[test]
+    fn test_conversation_history_save_and_load() {
+        let temp_dir = create_temp_data_dir();
+        let original_data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "data".to_string());
+        
+        // Set temporary data directory
+        std::env::set_var("DATA_DIR", temp_dir.path().to_str().unwrap());
+        
+        // Create and populate conversation history
+        let session_id = "test-save-load".to_string();
+        let mut original_history = ConversationHistory::new(session_id.clone());
+        original_history.add_message("user".to_string(), "Hello".to_string());
+        original_history.add_message("assistant".to_string(), "Hi there!".to_string());
+        
+        // Save to file
+        original_history.save_to_file().expect("Failed to save conversation history");
+        
+        // Load from file
+        let loaded_history = ConversationHistory::load_from_file(&session_id)
+            .expect("Failed to load conversation history");
+        
+        // Verify loaded data matches original
+        assert_eq!(loaded_history.session_id, original_history.session_id);
+        assert_eq!(loaded_history.messages.len(), original_history.messages.len());
+        assert_eq!(loaded_history.messages[0].content, "Hello");
+        assert_eq!(loaded_history.messages[1].content, "Hi there!");
+        assert_eq!(loaded_history.created_at, original_history.created_at);
+        
+        // Restore original data directory
+        std::env::set_var("DATA_DIR", original_data_dir);
+    }
+
+    /// Test loading non-existent conversation history file
+    #[test]
+    fn test_conversation_history_load_nonexistent() {
+        let temp_dir = create_temp_data_dir();
+        let original_cwd = std::env::current_dir().unwrap();
+        
+        // Change to temp directory so "data" directory doesn't exist
+        std::env::set_current_dir(temp_dir.path()).unwrap();
+        
+        // Try to load non-existent file - should return new empty history
+        let result = ConversationHistory::load_from_file("nonexistent-session");
+        assert!(result.is_ok());
+        
+        let history = result.unwrap();
+        assert_eq!(history.session_id, "nonexistent-session");
+        assert!(history.messages.is_empty());
+        
+        // Restore original directory
+        std::env::set_current_dir(original_cwd).unwrap();
+    }
+
+    /// Test UUID generation and validation
+    #[test]
+    fn test_uuid_generation() {
+        // Test that we can generate valid UUIDs
+        let uuid1 = Uuid::new_v4().to_string();
+        let uuid2 = Uuid::new_v4().to_string();
+        
+        // Should be valid UUIDs
+        assert!(Uuid::parse_str(&uuid1).is_ok());
+        assert!(Uuid::parse_str(&uuid2).is_ok());
+        
+        // Should be different
+        assert_ne!(uuid1, uuid2);
+    }
+
+    /// Test UUID parsing validation
+    #[test]
+    fn test_uuid_parsing() {
+        // Valid UUID should parse
+        let valid_uuid = "550e8400-e29b-41d4-a716-446655440000";
+        assert!(Uuid::parse_str(valid_uuid).is_ok());
+        
+        // Invalid UUID should not parse
+        let invalid_uuid = "invalid-uuid-string";
+        assert!(Uuid::parse_str(invalid_uuid).is_err());
+        
+        // Empty string should not parse
+        assert!(Uuid::parse_str("").is_err());
+    }
 } 
