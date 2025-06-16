@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before running the aichat server via `cargo` or as a binary, ALWAYS set the environment variable `AICHAT_CONFIG_DIR=.` so we use the `config.yaml` suitable for our dev environment. 

@@ -76,6 +76,7 @@ wait_for_server() {
 
 # Start the server
 start_server() {
+    export AICHAT_CONFIG_DIR=.
     log_info "Starting Kindle AI Chat server..."
     
     # Kill any existing server processes and free the port
