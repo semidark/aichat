@@ -23,8 +23,9 @@ use rocket::fs::{FileServer, relative};
 use rocket::State;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::form::{Form, FromForm};
-use rocket::response::content::RawHtml;
+use rocket::response::stream::TextStream;
 use rocket::figment::{Figment, providers::{Toml, Env, Format}};
+use rocket::tokio::time::{sleep, Duration};
 
 // Standard library imports
 use std::sync::Arc;
@@ -176,13 +177,18 @@ pub fn get_or_create_session_id(cookies: &CookieJar<'_>) -> String {
     session_id
 }
 
-/// Main chat endpoint handler for htmx form submission (returns HTML)
+/// Streaming chat endpoint handler for htmx form submission (returns HTML stream)
 #[post("/chat", data = "<chat_form>")]
 pub async fn chat(
     chat_form: Form<ChatForm>, 
     cookies: &CookieJar<'_>,
-    state: &State<AppState>
-) -> RawHtml<String> {
+    state: &State<AppState>,
+    streaming_config: &State<StreamingConfig>
+) -> TextStream![String] {
+    // Get configuration values
+    let chunk_size = streaming_config.chunk_size;
+    let delay_ms = streaming_config.delay_ms;
+    
     // Get or create session ID
     let session_id = get_or_create_session_id(cookies);
     
@@ -199,57 +205,84 @@ pub async fn chat(
     let user_message = &chat_form.message;
     history.add_message("user".to_string(), user_message.clone());
     
-    // HTML escape function for security
-    let html_escape = |s: &str| {
-        s.replace('&', "&amp;")
-         .replace('<', "&lt;")
-         .replace('>', "&gt;")
-         .replace('"', "&quot;")
-         .replace('\'', "&#x27;")
-    };
-    
-    // Note: User message HTML is handled by JavaScript for immediate display
-    // We only return the assistant message from the server
-    
-    // Create the global config for LLM integration
+    // Clone necessary data for the async block
     let global_config = state.inner().clone();
-    
-    // Create Input from conversation history
     let conversation_text = history.to_conversation_text();
-    let input = Input::from_str(&global_config, &conversation_text, None);
     
-    // Create abort signal for the LLM call
-    let abort_signal = create_abort_signal();
-    
-    // Call the LLM
-    let response_text = match call_llm(&input, &global_config, abort_signal).await {
-        Ok(text) => text,
-        Err(e) => {
-            eprintln!("Error calling LLM: {}", e);
-            format!("Sorry, I encountered an error: {}", e)
+    TextStream! {
+        // HTML escape function for security
+        let html_escape = |s: &str| {
+            s.replace('&', "&amp;")
+             .replace('<', "&lt;")
+             .replace('>', "&gt;")
+             .replace('"', "&quot;")
+             .replace('\'', "&#x27;")
+        };
+        
+        // Start the assistant message container
+        yield format!(
+            r#"<div class="message assistant">
+                <div class="message-role">Assistant:</div>
+                <div class="message-content">"#
+        );
+        
+        // Create Input from conversation history
+        let input = Input::from_str(&global_config, &conversation_text, None);
+        
+        // Create abort signal for the LLM call
+        let abort_signal = create_abort_signal();
+        
+        // For now, use non-streaming LLM call and simulate streaming
+        // TODO: Implement true streaming integration with aichat's SseHandler
+        let result = call_llm_for_streaming(&input, &global_config, abort_signal).await;
+        
+        match result {
+            Ok(response_text) => {
+                // Stream the response in chunks
+                let chars: Vec<char> = response_text.chars().collect();
+                let mut current_chunk = String::new();
+                
+                for ch in chars {
+                    current_chunk.push(ch);
+                    
+                    // When we reach the chunk size, yield the chunk
+                    if current_chunk.chars().count() >= chunk_size {
+                        yield format!("<span>{}</span>", html_escape(&current_chunk));
+                        current_chunk.clear();
+                        
+                        // Add delay for e-ink optimization
+                        if delay_ms > 0 {
+                            sleep(Duration::from_millis(delay_ms)).await;
+                        }
+                    }
+                }
+                
+                // Yield any remaining characters
+                if !current_chunk.is_empty() {
+                    yield format!("<span>{}</span>", html_escape(&current_chunk));
+                }
+                
+                // Update history with the complete response
+                let mut updated_history = match ConversationHistory::load_from_file(&session_id) {
+                    Ok(h) => h,
+                    Err(_) => ConversationHistory::new(session_id.clone())
+                };
+                updated_history.add_message("assistant".to_string(), response_text);
+                
+                // Save updated history
+                if let Err(e) = updated_history.save_to_file() {
+                    eprintln!("Error saving conversation history: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error calling LLM: {}", e);
+                yield format!("<span>{}</span>", html_escape(&format!("Sorry, I encountered an error: {}", e)));
+            }
         }
-    };
-    
-    // Add assistant response to history
-    history.add_message("assistant".to_string(), response_text.clone());
-    
-    // Save updated history
-    if let Err(e) = history.save_to_file() {
-        eprintln!("Error saving conversation history: {}", e);
+        
+        // Close the assistant message container
+        yield "</div></div>".to_string();
     }
-    
-    // Create assistant message HTML
-    let assistant_html = format!(
-        r#"<div class="message assistant">
-            <div class="message-role">Assistant:</div>
-            <div class="message-content">{}</div>
-        </div>"#,
-        html_escape(&response_text)
-    );
-    
-    // Return only assistant message as HTML
-    // (User message is already displayed immediately by JavaScript for better UX)
-    RawHtml(assistant_html)
 }
 
 /// Helper function to call the LLM using aichat's client system
@@ -277,6 +310,16 @@ async fn call_llm(
     global_config.write().after_chat_completion(input, &output, &tool_results)?;
     
     Ok(output)
+}
+
+/// Helper function to call the LLM for streaming (currently simulates streaming)
+async fn call_llm_for_streaming(
+    input: &Input,
+    global_config: &GlobalConfig,
+    abort_signal: crate::utils::AbortSignal,
+) -> Result<String> {
+    // For now, this is the same as call_llm but will be enhanced for true streaming later
+    call_llm(input, global_config, abort_signal).await
 }
 
 /// Basic index route for testing

@@ -65,7 +65,16 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 3.4 Create `static/style.css` with a minimal, high-contrast, single-column layout using a large serif font suitable for e-ink.
 
 - [ ] **4.0 Develop E-Ink Optimized Streaming**
-  - [ ] 4.1 Modify the `/chat` endpoint to return a `Stream` of data.
+  - [x] 4.1 Modify the `/chat` endpoint to return a `Stream` of data.
+    - **Completed**: Converted `/chat` endpoint from returning `RawHtml<String>` to `TextStream![String]`
+    - **Completed**: Implemented chunked streaming using Rocket's `TextStream!` macro
+    - **Completed**: Added configurable chunk size and delay using `StreamingConfig` from Task 4.2
+    - **Completed**: Stream returns HTML fragments wrapped in `<span>` elements for each chunk
+    - **Completed**: Added proper HTML structure with opening and closing `<div>` containers
+    - **Completed**: Implemented e-ink optimization with configurable delays between chunks (300ms default)
+    - **Completed**: Added session management within the streaming context
+    - **Completed**: Added integration test `test_chat_endpoint_streaming` to verify streaming functionality
+    - **Note**: Currently simulates streaming by chunking the complete LLM response; true real-time streaming integration with aichat's `SseHandler` is planned for future enhancement
   - [x] 4.2 Add `streaming.chunk_size` and `streaming.delay_ms` to `Rocket.toml` and read them into the application's configuration.
     - **Completed**: Created `Rocket.toml` with streaming configuration sections for different profiles (default, debug, release)
     - **Completed**: Added `StreamingConfig` struct with `chunk_size` (24 chars) and `delay_ms` (300ms) fields optimized for Kindle e-ink

@@ -329,4 +329,46 @@ mod tests {
         assert_eq!(config.delay_ms, 300, 
                    "Config endpoint should return delay_ms of 300");
     }
+
+    /// Test that the streaming chat endpoint returns a stream (Task 4.1)
+    /// 
+    /// This test verifies that the /api/chat endpoint now returns a streaming response
+    /// with HTML chunks instead of a single HTML block.
+    #[rocket::async_test]
+    async fn test_chat_endpoint_streaming() {
+        let client = create_test_client().await;
+        
+        let response = client
+            .post("/api/chat")
+            .header(ContentType::Form)
+            .body("message=hello")
+            .dispatch()
+            .await;
+        
+        assert_eq!(response.status(), Status::Ok);
+        
+        // Get the response body as a stream
+        let body = response.into_string().await;
+        assert!(body.is_some(), "Response should have a body");
+        
+        let body_text = body.unwrap();
+        
+        // Should contain HTML structure for assistant message
+        assert!(body_text.contains("message assistant"), 
+                "Response should contain assistant message structure");
+        assert!(body_text.contains("Assistant:"), 
+                "Response should contain assistant role label");
+        assert!(body_text.contains("<span>"), 
+                "Response should contain span elements for streaming chunks");
+        
+        // Should start and end with proper HTML structure
+        assert!(body_text.contains("<div class=\"message assistant\">"), 
+                "Response should start with assistant message div");
+        assert!(body_text.contains("</div></div>"), 
+                "Response should end with closing divs");
+        
+        // Should NOT contain user message (handled by JavaScript)
+        assert!(!body_text.contains("hello"), 
+                "Response should NOT contain the user's message");
+    }
 } 
