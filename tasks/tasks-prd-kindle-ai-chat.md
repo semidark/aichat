@@ -35,7 +35,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 2.2 Implement cookie-based session handling: on first visit, generate a UUID, set it as a persistent cookie, and create a `data/{uuid}.json` file.
   - [x] 2.3 On subsequent requests, read the UUID from the cookie to load the corresponding conversation history from the JSON file.
   - [x] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
-  - [ ] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
+  - [x] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
 
   - [x] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
   - [x] **2.T.1 Refactor for Testability & Create Integration Test Harness**
