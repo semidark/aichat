@@ -1,4 +1,6 @@
 /target
 /tmp
+/data
 /.env
 *.log
+cookies.txt
