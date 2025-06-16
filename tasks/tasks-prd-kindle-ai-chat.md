@@ -21,7 +21,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
 
 ## Tasks
 
-- [X] **0 Fork aichat and create a branch for the kindle-ai-chat project**
+- [x] **0 Fork aichat and create a branch for the kindle-ai-chat project**
 - [x] **1.0 Project Setup and Initial Rocket Integration**
   - [x] 1.1 Add `rocket` (0.5.1) and `uuid` (1.17.0) to `Cargo.toml`.
   - [x] 1.2 Replace the existing `aichat` CLI entry point with a Rocket server launch in `src/main.rs`.
@@ -33,7 +33,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 2.1 Create a `POST /chat` endpoint in Rocket to receive user input.
   - [x] 2.2 Implement cookie-based session handling: on first visit, generate a UUID, set it as a persistent cookie, and create a `data/{uuid}.json` file.
   - [x] 2.3 On subsequent requests, read the UUID from the cookie to load the corresponding conversation history from the JSON file.
-  - [ ] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
+  - [x] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
   - [ ] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
 
 - [ ] **3.0 Build the Frontend UI with htmx**
