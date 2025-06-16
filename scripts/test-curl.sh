@@ -16,8 +16,10 @@ NC='\033[0m' # No Color
 # Configuration
 SERVER_PORT=8000
 SERVER_URL="http://localhost:${SERVER_PORT}"
-STARTUP_WAIT=5
-TEST_TIMEOUT=10
+STARTUP_WAIT=8
+COMPILATION_WAIT=30
+MAX_STARTUP_RETRIES=12
+RETRY_INTERVAL=2
 
 # Test counters
 TESTS_PASSED=0
@@ -45,11 +47,31 @@ log_warning() {
 
 # Check if server is running
 check_server() {
-    if curl -s --connect-timeout 2 "${SERVER_URL}/" > /dev/null 2>&1; then
+    if curl -s --connect-timeout 3 --max-time 5 "${SERVER_URL}/" > /dev/null 2>&1; then
         return 0
     else
         return 1
     fi
+}
+
+# Wait for server to be ready with retries
+wait_for_server() {
+    local retries=0
+    log_info "Waiting for server to be ready..."
+    
+    while [ $retries -lt $MAX_STARTUP_RETRIES ]; do
+        if check_server; then
+            log_success "Server is responding after $((retries * RETRY_INTERVAL)) seconds"
+            return 0
+        fi
+        
+        retries=$((retries + 1))
+        log_info "Server not ready yet, retry $retries/$MAX_STARTUP_RETRIES in ${RETRY_INTERVAL}s..."
+        sleep $RETRY_INTERVAL
+    done
+    
+    log_error "Server failed to respond after $((MAX_STARTUP_RETRIES * RETRY_INTERVAL)) seconds"
+    return 1
 }
 
 # Start the server
@@ -69,20 +91,34 @@ start_server() {
     fi
     
     # Start server in background
+    log_info "Starting cargo run (this may take time for compilation)..."
     nohup cargo run > /tmp/kindle-server.log 2>&1 &
     SERVER_PID=$!
     
     log_info "Server started with PID: ${SERVER_PID}"
-    log_info "Waiting ${STARTUP_WAIT}s for server startup..."
-    sleep ${STARTUP_WAIT}
     
-    # Verify server is running
-    if check_server; then
-        log_success "Server is responding"
+    # Give initial time for compilation and startup
+    log_info "Waiting ${STARTUP_WAIT}s for initial compilation and startup..."
+    
+    # Monitor compilation progress
+    local wait_time=0
+    while [ $wait_time -lt $STARTUP_WAIT ]; do
+        if [ -f /tmp/kindle-server.log ] && grep -q "Compiling" /tmp/kindle-server.log; then
+            log_info "Compilation in progress..."
+        elif [ -f /tmp/kindle-server.log ] && grep -q "Finished" /tmp/kindle-server.log; then
+            log_info "Compilation finished, server should be starting..."
+        fi
+        sleep 2
+        wait_time=$((wait_time + 2))
+    done
+    
+    # Wait for server to be ready with retries
+    if wait_for_server; then
+        log_success "Server startup completed successfully"
     else
         log_error "Server failed to start or is not responding"
-        log_info "Server log:"
-        tail -20 /tmp/kindle-server.log
+        log_info "Server log (last 30 lines):"
+        tail -30 /tmp/kindle-server.log
         stop_server
         exit 1
     fi
@@ -91,11 +127,22 @@ start_server() {
 # Stop the server
 stop_server() {
     log_info "Stopping server..."
+    
+    # Try graceful shutdown first
     if [ ! -z "${SERVER_PID}" ]; then
         kill ${SERVER_PID} 2>/dev/null || true
+        sleep 2
     fi
+    
+    # Force kill any remaining cargo run processes
     pkill -f "cargo run" 2>/dev/null || true
+    
+    # Force kill anything on our port
+    lsof -ti:${SERVER_PORT} | xargs kill -9 2>/dev/null || true
+    
+    # Wait a moment for cleanup
     sleep 1
+    
     log_info "Server stopped"
 }
 
@@ -280,6 +327,11 @@ main() {
     if [ ! -f "Cargo.toml" ]; then
         log_error "Please run this script from the project root directory"
         exit 1
+    fi
+    
+    # Check if project has been built recently
+    if [ ! -d "target" ] || [ ! -f "target/debug/aichat" ]; then
+        log_info "Project not built yet - first compilation may take longer"
     fi
     
     # Start the server
