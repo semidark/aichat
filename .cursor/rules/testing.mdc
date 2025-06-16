@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Overview: Kindle AI Chat Testing Guide
+
+`docs/testing.md` developers set up and run tests for the Kindle AI Chat project. It covers:
+
+- **Test setup:** How to run and watch tests using Rust tools.
+- **Testing patterns:** Examples for unit, async, streaming, and integration tests (for web endpoints).
+- **What to test:** Priorities include core chat logic, Kindle-specific performance, and HTTP endpoints via integration tests.
+- **How to run/debug tests:** Commands, pre-commit checks, and troubleshooting tips.
+- **Utilities:** Custom macros and helpers for easier testing.
+- **Manual verification:** How and when to use curl to test real HTTP behavior beyond automated tests.
+
+Use `docs/testing.md` as a reference for where and how to test Kindle AI Chat features.
