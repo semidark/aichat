@@ -5,11 +5,10 @@
 //! cycle including session management, cookie handling, and JSON responses.
 
 use rocket::local::asynchronous::Client;
-use rocket::http::{Status, ContentType};
-use serde_json::Value;
+use rocket::http::Status;
 
 // Import our library functions and types
-use aichat::{rocket, ChatRequest, ChatResponse};
+use aichat::rocket;
 
 /// Helper function to create a test client
 /// 
@@ -26,9 +25,31 @@ async fn create_test_client() -> Client {
 mod tests {
     use super::*;
 
-    // TODO: Implement test for GET / endpoint (Task 2.T.3.1)
-    // This test should verify that the static file server works correctly
-    // and returns a 200 OK status for the root path.
+    /// Test GET / endpoint to verify static file server functionality (Task 2.T.3.1)
+    /// 
+    /// This test confirms that the static file server works correctly by making a GET request
+    /// to the root path and asserting that it returns a 200 OK status. The static file server
+    /// is configured to serve files from the "static" directory, with "index.html" as the
+    /// default file for directory requests.
+    #[rocket::async_test]
+    async fn test_static_file_server_root_request() {
+        let client = create_test_client().await;
+        
+        // Make a GET request to the root path
+        let response = client.get("/").dispatch().await;
+        
+        // Assert that we get a 200 OK status, confirming the static file server works
+        assert_eq!(response.status(), Status::Ok, 
+                   "Static file server should return 200 OK for root path");
+        
+        // Additionally verify that we got some content (the index.html file)
+        let body = response.into_string().await.expect("Response should have a body");
+        assert!(!body.is_empty(), "Response body should not be empty");
+        
+        // Verify it's actually serving HTML content
+        assert!(body.contains("<html>") || body.contains("<!DOCTYPE"), 
+                "Response should contain HTML content");
+    }
     
     // TODO: Implement test for POST /api/chat session creation (Task 2.T.3.2)
     // This test should simulate a user's first visit and assert that a
