@@ -4,7 +4,8 @@ Based on PRD: `prd-kindle-ai-chat.md`
 
 ## Relevant Files
 
-- `src/main.rs` - The main entry point for the Rocket web server application.
+- `src/main.rs` - This file is a simple entry point that delegates to `src/lib.rs`
+- `src/lib.rs` - This is our core application logic.
 - `src/main_original_backup.rs` - Backup of the original aichat CLI main.rs for reference.
 - `static/index.html` - The single HTML file for the user interface, including htmx attributes.
 - `static/style.css` - Minimal, high-contrast CSS optimized for Kindle's e-ink display.
@@ -57,11 +58,11 @@ Based on PRD: `prd-kindle-ai-chat.md`
     - [x] 2.T.3.3 Write an integration test that simulates a subsequent visit by sending a cookie and verifies the server uses the existing session.
     - [x] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
 
-- [ ] **3.0 Build the Frontend UI with htmx**
+- [x] **3.0 Build the Frontend UI with htmx**
   - [x] 3.1 Download `htmx.min.js` (1.9.12) and place it in the `static/` directory.
   - [x] 3.2 Structure `static/index.html` with a scrollable history pane, a resizable `<textarea>`, and a submit button.
-  - [ ] 3.3 Use htmx attributes (`hx-post`, `hx-target`, `hx-swap`) on the form to send data to `/chat` and append the response to the history pane.
-  - [ ] 3.4 Create `static/style.css` with a minimal, high-contrast, single-column layout using a large serif font suitable for e-ink.
+  - [x] 3.3 Use htmx attributes (`hx-post`, `hx-target`, `hx-swap`) on the form to send data to `/api/chat` and append the response to the history pane.
+  - [x] 3.4 Create `static/style.css` with a minimal, high-contrast, single-column layout using a large serif font suitable for e-ink.
 
 - [ ] **4.0 Develop E-Ink Optimized Streaming**
   - [ ] 4.1 Modify the `/chat` endpoint to return a `Stream` of data.
