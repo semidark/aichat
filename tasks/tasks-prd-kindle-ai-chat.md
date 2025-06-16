@@ -41,7 +41,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [ ] **2.T.1 Refactor for Testability & Create Integration Test Harness**
     - [x] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
     - [x] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
-    - [ ] 2.T.1.3 Create a `src/lib.rs` and move the application logic there, turning our binary into a library that integration tests can use. `src/main.rs` will now just call the library.
+    - [x] 2.T.1.3 Create a `src/lib.rs` and move the application logic there, turning our binary into a library that integration tests can use. `src/main.rs` will now just call the library.
     - [ ] 2.T.1.4 Create the `tests/` directory and an empty `tests/integration_tests.rs` file.
 
   - [ ] **2.T.2 Implement Unit Tests for Core Session Logic**
