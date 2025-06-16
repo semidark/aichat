@@ -249,6 +249,20 @@ fn index() -> &'static str {
     "Hello, Kindle AI Chat!"
 }
 
+/// Create and configure the Rocket instance for the Kindle AI Chat server.
+/// This function can be used both for launching the server and for testing.
+pub async fn rocket() -> rocket::Rocket<rocket::Build> {
+    // Initialize configuration for web server mode
+    let config = Config::init(WorkingMode::Serve, false).await
+        .expect("Failed to initialize config");
+    let app_state: AppState = Arc::new(RwLock::new(config));
+
+    rocket::build()
+        .manage(app_state)
+        .mount("/api", routes![chat])
+        .mount("/", FileServer::from(relative!("static")))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     use crate::cli::Cli;
@@ -313,15 +327,6 @@ async fn run_cli(cli: crate::cli::Cli) -> Result<()> {
 }
 
 async fn run_server() -> Result<()> {
-    // Initialize configuration for web server mode
-    let config = Config::init(WorkingMode::Serve, false).await?;
-    let app_state: AppState = Arc::new(RwLock::new(config));
-
-    let rocket = rocket::build()
-        .manage(app_state)
-        .mount("/api", routes![chat])
-        .mount("/", FileServer::from(relative!("static")));
-    
-    rocket.launch().await.map_err(|e| anyhow::anyhow!("Rocket error: {}", e))?;
+    rocket().await.launch().await.map_err(|e| anyhow::anyhow!("Rocket error: {}", e))?;
     Ok(())
 }

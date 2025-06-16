@@ -13,6 +13,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
 - `Rocket.toml` - Configuration file for the Rocket server, including streaming parameters.
 - `data/` - Directory to store persistent conversation history as JSON files.
 - `tests/integration_tests.rs` - Integration tests for the Rocket endpoints.
+- `scripts/test-curl.sh` - Automated curl test suite for manual verification of HTTP endpoints.
 
 ### Notes
 
@@ -38,8 +39,8 @@ Based on PRD: `prd-kindle-ai-chat.md`
 
   - [ ] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
   - [ ] **2.T.1 Refactor for Testability & Create Integration Test Harness**
-    - [ ] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
-    - [ ] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
+    - [x] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
+    - [x] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
     - [ ] 2.T.1.3 Create a `src/lib.rs` and move the application logic there, turning our binary into a library that integration tests can use. `src/main.rs` will now just call the library.
     - [ ] 2.T.1.4 Create the `tests/` directory and an empty `tests/integration_tests.rs` file.
 

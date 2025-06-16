@@ -233,6 +233,24 @@ fn debug_test() {
 
 While formal tests catch regressions, curl testing verifies real-world behavior:
 
+### Automated Curl Test Suite
+
+We provide a comprehensive test script that runs all curl tests automatically:
+
+```bash
+# Run the complete curl test suite
+./scripts/test-curl.sh
+```
+
+This script will:
+- ✅ Start the server automatically
+- ✅ Run all HTTP endpoint tests
+- ✅ Verify session management and cookies
+- ✅ Test Kindle-specific headers
+- ✅ Check session file persistence
+- ✅ Provide a colorized summary report
+- ✅ Clean up the server when finished
+
 ### Quick Curl Tests
 ```bash
 # Test basic endpoint
