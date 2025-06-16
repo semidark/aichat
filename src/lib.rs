@@ -24,6 +24,7 @@ use rocket::State;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::form::{Form, FromForm};
 use rocket::response::content::RawHtml;
+use rocket::figment::{Figment, providers::{Toml, Env, Format}};
 
 // Standard library imports
 use std::sync::Arc;
@@ -284,6 +285,12 @@ pub fn index() -> &'static str {
     "Hello, Kindle AI Chat!"
 }
 
+/// Debug endpoint to show current streaming configuration
+#[get("/config")]
+pub fn config_debug(streaming_config: &State<StreamingConfig>) -> rocket::serde::json::Json<StreamingConfig> {
+    rocket::serde::json::Json(streaming_config.inner().clone())
+}
+
 /// Create and configure the Rocket instance for the Kindle AI Chat server.
 /// This function can be used both for launching the server and for testing.
 pub async fn rocket() -> rocket::Rocket<rocket::Build> {
@@ -292,9 +299,20 @@ pub async fn rocket() -> rocket::Rocket<rocket::Build> {
         .expect("Failed to initialize config");
     let app_state: AppState = Arc::new(RwLock::new(config));
 
+    // Load streaming configuration from Rocket.toml with environment variable overrides
+    let figment = Figment::from(rocket::Config::default())
+        .merge(Toml::file("Rocket.toml"))
+        .merge(Env::prefixed("ROCKET_"))
+        .merge(Env::prefixed("KINDLE_").map(|key| key.as_str().replace("KINDLE_", "").to_lowercase().into()));
+    
+    let streaming_config: StreamingConfig = figment
+        .extract_inner("streaming")
+        .unwrap_or_default();
+
     rocket::build()
         .manage(app_state)
-        .mount("/api", routes![chat])
+        .manage(streaming_config)
+        .mount("/api", routes![chat, config_debug])
         .mount("/", FileServer::from(relative!("static")))
 }
 
@@ -346,6 +364,22 @@ pub async fn run_server() -> Result<()> {
     Ok(())
 }
 
+/// Streaming configuration for Kindle e-ink optimization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamingConfig {
+    pub chunk_size: usize,
+    pub delay_ms: u64,
+}
+
+impl Default for StreamingConfig {
+    fn default() -> Self {
+        Self {
+            chunk_size: 24,  // Default chunk size for Kindle e-ink
+            delay_ms: 300,   // Default delay for e-ink refresh
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -354,6 +388,29 @@ mod tests {
     /// Helper function to create a temporary directory for test files
     fn create_temp_data_dir() -> TempDir {
         tempfile::tempdir().expect("Failed to create temp directory")
+    }
+
+    /// Test StreamingConfig default values
+    #[test]
+    fn test_streaming_config_defaults() {
+        let config = StreamingConfig::default();
+        assert_eq!(config.chunk_size, 24);
+        assert_eq!(config.delay_ms, 300);
+    }
+
+    /// Test that StreamingConfig can be serialized and deserialized
+    #[test]
+    fn test_streaming_config_serde() {
+        let config = StreamingConfig {
+            chunk_size: 32,
+            delay_ms: 500,
+        };
+        
+        let serialized = serde_json::to_string(&config).expect("Failed to serialize");
+        let deserialized: StreamingConfig = serde_json::from_str(&serialized).expect("Failed to deserialize");
+        
+        assert_eq!(deserialized.chunk_size, 32);
+        assert_eq!(deserialized.delay_ms, 500);
     }
 
     /// Test ConversationHistory creation and basic functionality

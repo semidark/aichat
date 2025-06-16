@@ -7,9 +7,8 @@
 use rocket::local::asynchronous::Client;
 use rocket::http::{Status, ContentType, Cookie};
 use uuid;
-
-// Import our library functions and types
-use aichat::rocket;
+use aichat::{rocket, StreamingConfig};
+use serde_json;
 
 /// Helper function to create a test client
 /// 
@@ -274,5 +273,60 @@ mod tests {
         
         // If we reach this point, the test framework is working correctly
         assert!(true, "Test framework setup successful");
+    }
+
+    /// Test that streaming configuration is properly loaded from Rocket.toml (Task 4.2)
+    /// 
+    /// This test verifies that the StreamingConfig is properly loaded into Rocket's state
+    /// management system and contains the expected default values from Rocket.toml.
+    #[rocket::async_test]
+    async fn test_streaming_config_loaded() {
+        let rocket_instance = rocket().await;
+        
+        // Test that the streaming config is managed by Rocket
+        let streaming_config = rocket_instance.state::<StreamingConfig>();
+        assert!(streaming_config.is_some(), 
+                "StreamingConfig should be managed by Rocket");
+        
+        let config = streaming_config.unwrap();
+        // Should have default values from Rocket.toml
+        assert_eq!(config.chunk_size, 24, 
+                   "Default chunk size should be 24 characters for Kindle e-ink");
+        assert_eq!(config.delay_ms, 300, 
+                   "Default delay should be 300ms for e-ink refresh");
+    }
+
+    /// Test the config debug endpoint returns streaming configuration as JSON (Task 4.2)
+    /// 
+    /// This test verifies that the /api/config endpoint returns the current streaming
+    /// configuration as JSON, which is useful for debugging and verification.
+    #[rocket::async_test]
+    async fn test_config_debug_endpoint() {
+        let client = create_test_client().await;
+        
+        let response = client.get("/api/config").dispatch().await;
+        
+        // Should return 200 OK
+        assert_eq!(response.status(), Status::Ok, 
+                   "Config debug endpoint should return 200 OK");
+        
+        // Should return JSON content type
+        let content_type = response.content_type();
+        assert!(content_type.is_some(), "Response should have content type");
+        assert_eq!(*content_type.unwrap().media_type(), rocket::http::MediaType::JSON,
+                   "Response should be JSON");
+        
+        // Parse the JSON response
+        let config_json = response.into_string().await
+            .expect("Response should have a body");
+        
+        let config: StreamingConfig = serde_json::from_str(&config_json)
+            .expect("Response should be valid StreamingConfig JSON");
+        
+        // Verify the configuration values
+        assert_eq!(config.chunk_size, 24, 
+                   "Config endpoint should return chunk_size of 24");
+        assert_eq!(config.delay_ms, 300, 
+                   "Config endpoint should return delay_ms of 300");
     }
 } 

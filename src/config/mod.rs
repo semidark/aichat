@@ -145,6 +145,10 @@ pub struct Config {
     pub save_shell_history: bool,
     pub sync_models_url: Option<String>,
 
+    // Streaming configuration for Kindle e-ink optimization
+    pub streaming_chunk_size: usize,
+    pub streaming_delay_ms: u64,
+
     pub clients: Vec<ClientConfig>,
 
     #[serde(skip)]
@@ -219,6 +223,9 @@ impl Default for Config {
             user_agent: None,
             save_shell_history: true,
             sync_models_url: None,
+
+            streaming_chunk_size: 24,  // Default chunk size for Kindle e-ink
+            streaming_delay_ms: 300,   // Default delay for e-ink refresh
 
             clients: vec![],
 

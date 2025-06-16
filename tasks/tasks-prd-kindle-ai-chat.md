@@ -66,7 +66,14 @@ Based on PRD: `prd-kindle-ai-chat.md`
 
 - [ ] **4.0 Develop E-Ink Optimized Streaming**
   - [ ] 4.1 Modify the `/chat` endpoint to return a `Stream` of data.
-  - [ ] 4.2 Add `streaming.chunk_size` and `streaming.delay_ms` to `Rocket.toml` and read them into the application's configuration.
+  - [x] 4.2 Add `streaming.chunk_size` and `streaming.delay_ms` to `Rocket.toml` and read them into the application's configuration.
+    - **Completed**: Created `Rocket.toml` with streaming configuration sections for different profiles (default, debug, release)
+    - **Completed**: Added `StreamingConfig` struct with `chunk_size` (24 chars) and `delay_ms` (300ms) fields optimized for Kindle e-ink
+    - **Completed**: Integrated Rocket's Figment configuration system to load streaming config from `Rocket.toml`
+    - **Completed**: Added support for environment variable overrides using `KINDLE_*` prefix (e.g., `KINDLE_STREAMING_CHUNK_SIZE=16`)
+    - **Completed**: Added unit tests for `StreamingConfig` serialization/deserialization
+    - **Completed**: Added integration test to verify streaming configuration is properly loaded into Rocket's state management
+    - **Completed**: Configuration is now available to all Rocket handlers via `State<StreamingConfig>`
   - [ ] 4.3 In the stream, send back small HTML fragments (e.g., `<span>chunk</span>`) for each chunk of the AI response, respecting the configured size and delay.
   - [ ] 4.4 Write a small, ES5-compatible function in `static/client.js` to handle htmx's streaming events and append the `<span>` fragments to the conversation display.
 

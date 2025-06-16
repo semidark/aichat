@@ -1,0 +1,36 @@
+[default]
+# Basic Rocket configuration
+address = "0.0.0.0"
+port = 8000
+workers = 4
+keep_alive = 5
+log_level = "normal"
+
+# Streaming configuration for Kindle e-ink optimization
+[default.streaming]
+chunk_size = 24      # Characters per chunk, optimized for e-ink refresh
+delay_ms = 300       # Milliseconds delay between chunks for e-ink displays
+
+# Development profile
+[debug]
+address = "0.0.0.0"
+port = 8000
+workers = 1
+keep_alive = 5
+log_level = "normal" # Debug
+
+[debug.streaming]
+chunk_size = 24
+delay_ms = 300
+
+# Production profile
+[release]
+address = "0.0.0.0"
+port = 8000
+workers = 8
+keep_alive = 10
+log_level = "critical"
+
+[release.streaming]
+chunk_size = 24
+delay_ms = 300 
