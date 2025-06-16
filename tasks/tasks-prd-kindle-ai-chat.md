@@ -54,7 +54,7 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [ ] **2.T.3 Implement Integration Tests for Web Endpoints**
     - [x] 2.T.3.1 In `tests/integration_tests.rs`, write a test to make a `GET /` request and assert a `200 OK` status to confirm the static file server works.
     - [x] 2.T.3.2 Write an integration test for `POST /api/chat` that simulates a user's first visit and asserts that a `session_id` cookie is successfully created in the response.
-    - [ ] 2.T.3.3 Write an integration test that simulates a subsequent visit by sending a cookie and verifies the server uses the existing session.
+    - [x] 2.T.3.3 Write an integration test that simulates a subsequent visit by sending a cookie and verifies the server uses the existing session.
     - [ ] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
 
 - [ ] **3.0 Build the Frontend UI with htmx**
