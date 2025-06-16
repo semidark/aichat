@@ -36,6 +36,25 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 2.4 Integrate `aichat`'s `@client` crate to send the user's prompt (with history) to the LLM.
   - [ ] 2.5 For now, have the `/chat` endpoint return the entire AI response in a single block, updating the session file.
 
+  - [ ] **2.T Retroactive Testing (Covering Tasks 1.0-2.4)**
+  - [ ] **2.T.1 Refactor for Testability & Create Integration Test Harness**
+    - [ ] 2.T.1.1 Move Rocket instance creation from `run_server()` into a new public `rocket()` function in `src/main.rs` so it can be imported by tests.
+    - [ ] 2.T.1.2 Update `run_server()` to call the new `pub fn rocket()` function.
+    - [ ] 2.T.1.3 Create a `src/lib.rs` and move the application logic there, turning our binary into a library that integration tests can use. `src/main.rs` will now just call the library.
+    - [ ] 2.T.1.4 Create the `tests/` directory and an empty `tests/integration_tests.rs` file.
+
+  - [ ] **2.T.2 Implement Unit Tests for Core Session Logic**
+    - [ ] 2.T.2.1 Add a `#[cfg(test)]` module at the bottom of the file containing the core logic (`src/lib.rs` after refactor).
+    - [ ] 2.T.2.2 Write a unit test for `ConversationHistory` to verify saving to and loading from a temporary file works correctly.
+    - [ ] 2.T.2.3 Write a unit test for `to_conversation_text()` to ensure it formats the prompt history correctly for the LLM.
+    - [ ] 2.T.2.4 Write unit tests for `get_or_create_session_id()` to validate both the creation of a new session cookie and the retrieval of an existing one.
+
+  - [ ] **2.T.3 Implement Integration Tests for Web Endpoints**
+    - [ ] 2.T.3.1 In `tests/integration_tests.rs`, write a test to make a `GET /` request and assert a `200 OK` status to confirm the static file server works.
+    - [ ] 2.T.3.2 Write an integration test for `POST /api/chat` that simulates a user's first visit and asserts that a `session_id` cookie is successfully created in the response.
+    - [ ] 2.T.3.3 Write an integration test that simulates a subsequent visit by sending a cookie and verifies the server uses the existing session.
+    - [ ] 2.T.3.4 Write an integration test to confirm the basic JSON response from `/api/chat` is well-formed.
+
 - [ ] **3.0 Build the Frontend UI with htmx**
   - [ ] 3.1 Download `htmx.min.js` (1.9.12) and place it in the `static/` directory.
   - [ ] 3.2 Structure `static/index.html` with a scrollable history pane, a resizable `<textarea>`, and a submit button.

@@ -126,20 +126,19 @@ Guidelines:
 By anchoring all dependency management and versioning to the upstream `Cargo.toml`, we ensure maximal compatibility, avoid duplication, and simplify long-term maintenance.
 
 For the libraries we will introduce, we will use the following versions:
-- [rocket 0.5.1](mdc:https:/docs.rs/rocket/latest/rocket)
-- [uuid 1.17.0](mdc:https:/docs.rs/uuid/1.17.0/uuid)
-- [htmx 1.9.12](mdc:https:/htmx.org/docs/v1.9.12) 
+- ](hrs/t/rocket/)
+- [uuid 1.17.0](https://docs.rs/uuid/1.17.0/uuid/2](https://htmx.org/docs/v1.9.12/) 
   (not 2.x since I want to use the very mature version)
-- [aichat v0.29.0](mdc:https:/docs.rs/aichat/0.29.0/aichat) 
+- [aichat v0.29.0](https://docs.rs/aichat/0.29.0/aichat/) 
 
 ## 10. Coding Standards and Best Practices
 
-This fork will follow coding standards and best practices inspired by aichat, which relies on established Rust community conventions, idiomatic code, and clear inline documentation—rather than project-specific, documented guidelines.
+This fork will follow coding standards and best practices inspired by aichat, which relies on established Rust community conventions, idiomatic code, and clear inline documentation—rather than project-spdelines.
 
 The following best practices should be observed:
 
 1. **Style Guidelines and Formatting**
-   - Adhere to the official [Rust style guidelines](mdc:https:/doc.rust-lang.org/stable/style-guide/index.html), including naming conventions, indentation, and module structure.
+   - Adhere to the official [Rust style guidelines](https://doc.rust-lang.org/stable/style-guide/index.html), including naming conventions, indentation, and module structure.
    - Use community-standard formatting and linting tools such as `rustfmt` and `clippy` to maintain code quality and consistency.
 
 2. **Code Modularity and Separation of Concerns**
@@ -151,9 +150,8 @@ The following best practices should be observed:
    - Use inline comments to explain complex logic or deviations from upstream functionality, aiding maintainers in understanding Kindle-specific adaptations.
 
 4. **Testing and Quality Assurance**
-   - Maintain comprehensive unit and integration tests for new and adapted functionality, using the standard Rust test framework as in aichat.
-   - Ensure any new features or changes are accompanied by tests that verify their impact on both core and Kindle-specific features.
-   - All tests should be run via CI to enforce standards and prevent regressions.
+   - Maintain comprehensive unit and integration tests for new and adapted functionality, using the testing strategy outlined in `/docs/testing`
+
 
 5. **Review and Collaboration**
    - Code reviews should emphasize adherence to these community conventions and project-specific best practices.
