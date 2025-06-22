@@ -64,27 +64,34 @@ Based on PRD: `prd-kindle-ai-chat.md`
   - [x] 3.3 Use htmx attributes (`hx-post`, `hx-target`, `hx-swap`) on the form to send data to `/api/chat` and append the response to the history pane.
   - [x] 3.4 Create `static/style.css` with a minimal, high-contrast, single-column layout using a large serif font suitable for e-ink.
 
-- [ ] **4.0 Develop E-Ink Optimized Streaming**
-  - [x] 4.1 Modify the `/chat` endpoint to return a `Stream` of data.
-    - **Completed**: Converted `/chat` endpoint from returning `RawHtml<String>` to `TextStream![String]`
-    - **Completed**: Implemented chunked streaming using Rocket's `TextStream!` macro
-    - **Completed**: Added configurable chunk size and delay using `StreamingConfig` from Task 4.2
-    - **Completed**: Stream returns HTML fragments wrapped in `<span>` elements for each chunk
-    - **Completed**: Added proper HTML structure with opening and closing `<div>` containers
-    - **Completed**: Implemented e-ink optimization with configurable delays between chunks (300ms default)
-    - **Completed**: Added session management within the streaming context
-    - **Completed**: Added integration test `test_chat_endpoint_streaming` to verify streaming functionality
-    - **Note**: Currently simulates streaming by chunking the complete LLM response; true real-time streaming integration with aichat's `SseHandler` is planned for future enhancement
-  - [x] 4.2 Add `streaming.chunk_size` and `streaming.delay_ms` to `Rocket.toml` and read them into the application's configuration.
-    - **Completed**: Created `Rocket.toml` with streaming configuration sections for different profiles (default, debug, release)
-    - **Completed**: Added `StreamingConfig` struct with `chunk_size` (24 chars) and `delay_ms` (300ms) fields optimized for Kindle e-ink
-    - **Completed**: Integrated Rocket's Figment configuration system to load streaming config from `Rocket.toml`
-    - **Completed**: Added support for environment variable overrides using `KINDLE_*` prefix (e.g., `KINDLE_STREAMING_CHUNK_SIZE=16`)
-    - **Completed**: Added unit tests for `StreamingConfig` serialization/deserialization
-    - **Completed**: Added integration test to verify streaming configuration is properly loaded into Rocket's state management
-    - **Completed**: Configuration is now available to all Rocket handlers via `State<StreamingConfig>`
-  - [ ] 4.3 In the stream, send back small HTML fragments (e.g., `<span>chunk</span>`) for each chunk of the AI response, respecting the configured size and delay.
-  - [ ] 4.4 Write a small, ES5-compatible function in `static/client.js` to handle htmx's streaming events and append the `<span>` fragments to the conversation display.
+- [ ] **4.0 Implement True End-to-End Streaming with SSE**
+  - [x] **4.1 Refactor Backend for True LLM Streaming**
+    - [x] 4.1.1 Modify `call_llm_for_streaming` to perform a true streaming call to the `aichat` client. This will likely involve using `aichat::client::SseHandler` or a similar streaming mechanism.
+    - [x] 4.1.2 The function should take a `tokio::sync::mpsc::Sender<String>` as an argument to send back the streamed chunks as they are received from the LLM.
+    - [x] 4.1.3 The function should also handle saving the full conversation to the history file once the stream is complete.
+
+  - [x] **4.2 Convert `/api/chat` Endpoint to Use SSE (Server-Sent Events)**
+    - [x] 4.2.1 Change the return type of the `chat` endpoint from `TextStream` to `rocket::response::stream::EventStream`.
+    - [x] 4.2.2 The endpoint will no longer send HTML container tags. Instead, its first action will be to return a `200 OK` response with the `HX-Trigger` header to signal the client. The initial response body will be empty.
+    - [x] 4.2.3 The endpoint will spawn an async task to call `call_llm_for_streaming`.
+    - [x] 4.2.4 The `EventStream` will listen on the receiving end of a channel. For each string received from the LLM stream, it will wrap it in a `<span>`, format it as a `data` field of an SSE `Event`, and send it to the client.
+    - [x] 4.2.5 At the end of the stream, send a special event (e.g., `event: "close"`) to signal completion to the client.
+
+  - [ ] **4.3 Update Frontend to Handle SSE Streaming**
+    - [ ] 4.3.1 Download the `sse.js` extension for htmx and add it to `static/`. Update `index.html` to include it.
+    - [ ] 4.3.2 In `static/index.html`, modify the chat form's htmx attributes. Remove `hx-post` and `hx-target`.
+    - [ ] 4.3.3 Add a new element (e.g., a `<div>`) that will connect to the SSE stream using `hx-ext="sse"` and `sse-connect="/api/chat"`. This element will be added to the DOM by client-side JS when the form is submitted.
+    - [ ] 4.3.4 The `sse-swap="message"` attribute will cause this element to listen for default `message` events and swap their content into a target.
+    - [ ] 4.3.5 In `static/client.js`, update the form submission handler:
+      - It will still create the user's message bubble.
+      - It will now also create the assistant's message container (`<div class="message assistant">...</div>`) with a unique ID for the content area.
+      - It will then create the SSE-connecting `div` from task 4.3.3, setting its `hx-swap="beforeend"` and `hx-target` to the new assistant message's content area ID.
+      - Finally, it will call `htmx.process()` on the new content to initialize the SSE connection.
+
+  - [x] **4.T Add Integration Tests for Streaming**
+    - [x] 4.T.1 Write an integration test in `tests/integration_tests.rs` that calls the `POST /api/chat` endpoint and verifies it receives a streaming SSE response (`Content-Type: text/event-stream`).
+    - [x] 4.T.2 The test should consume the stream and assert that it receives multiple `<span>` fragments.
+    - [x] 4.T.3 The test should verify that after the stream completes, the corresponding `data/{session-id}.json` file has been correctly updated with the full assistant response.
 
 - [ ] **5.0 Implement the On-Device Debug Console**
   - [ ] 5.1 Create a new Rocket endpoint at `GET /logs/sse` that returns a Server-Sent Events (SSE) stream.

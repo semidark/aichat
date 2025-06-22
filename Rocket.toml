@@ -8,8 +8,7 @@ log_level = "normal"
 
 # Streaming configuration for Kindle e-ink optimization
 [default.streaming]
-chunk_size = 24      # Characters per chunk, optimized for e-ink refresh
-delay_ms = 300       # Milliseconds delay between chunks for e-ink displays
+delay_ms = 1000       # Milliseconds delay between chunks for e-ink displays
 
 # Development profile
 [debug]
@@ -20,8 +19,7 @@ keep_alive = 5
 log_level = "normal" # Debug
 
 [debug.streaming]
-chunk_size = 24
-delay_ms = 300
+delay_ms = 1000
 
 # Production profile
 [release]
@@ -32,5 +30,4 @@ keep_alive = 10
 log_level = "critical"
 
 [release.streaming]
-chunk_size = 24
 delay_ms = 300 

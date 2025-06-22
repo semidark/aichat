@@ -30,6 +30,12 @@ impl SseHandler {
         if text.is_empty() {
             return Ok(());
         }
+        
+        // First check if we've been aborted, and if so, stop processing
+        if self.abort_signal.aborted() {
+            return Ok(());
+        }
+        
         self.buffer.push_str(text);
         let ret = self
             .sender
